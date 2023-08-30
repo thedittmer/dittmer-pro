@@ -45,24 +45,24 @@
 						</button>
 					{/if}
 				</div>
-				<div class="max-w-prose mx-auto text-center pt-4">
-					<p class="my-3 text-2xl text-center dark:text-white">Hi, I&#x27;m Jason Dittmer 🤘</p>
+				<div class="max-w-prose mx-auto md:text-center pt-4">
+					<p class="mt-3 text-lg md:text-2xl dark:text-white">Hi, I&#x27;m Jason Dittmer 🤘</p>
 					<h2
-						class="max-w-3xl py-2 mx-auto text-xl font-bold text-center text-gray-800 dark:text-white"
+						class="max-w-3xl pb-2 mx-auto text-lg md:text-xl font-bold text-gray-800 dark:text-white"
 					>
 						Web Developer & Software Engineer
 					</h2>
 					<p class="text-gray-800 dark:text-white">I can help you with your next project.</p>
-					<div class="flex items-center justify-center mt-4 dark:text-white">
+					<div class="flex flex-col md:flex-row md:items-center justify-center mt-6 dark:text-white">
 						<a
 							href="https://www.linkedin.com/in/jason-dittmer-04773223/"
 							target="_blank"
-							class="mx-4 underline">LinkedIn</a
+							class="m-4 underline">LinkedIn</a
 						>
-						<a href="https://twitter.com/thedittmer" target="_blank" class="mx-4 underline"
+						<a href="https://twitter.com/thedittmer" target="_blank" class="m-4 underline"
 							>Twitter</a
 						>
-						<a href="https://www.facebook.com/thedittmer/" target="_blank" class="mx-4 underline"
+						<a href="https://www.facebook.com/thedittmer/" target="_blank" class="m-4 underline"
 							>Facebook</a
 						>
 					</div>
