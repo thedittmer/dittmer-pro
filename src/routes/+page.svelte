@@ -56,22 +56,19 @@
 						Web Developer and Software Engineer
 					</h1>
 					<p class="text-gray-800 dark:text-white">I can help you with your next project.</p>
-					<div class="flex flex-col md:flex-row md:items-center justify-center mt-6 dark:text-white">
-						<a
-							href="/chat"
-							class="m-4 underline">Dittmer's Chat Room</a
-						>
-						<a
-							href="https://www.linkedin.com/in/jason-dittmer-04773223/"
-							target="_blank"
-							class="m-4 underline">LinkedIn</a
-						>
-						<a href="https://twitter.com/thedittmer" target="_blank" class="m-4 underline"
-							>Twitter</a
-						>
-						<a href="https://www.facebook.com/thedittmer/" target="_blank" class="m-4 underline"
-							>Facebook</a
-						>
+					<div class="flex flex-col md:items-center justify-center mt-6 dark:text-white">
+						<a href="/chat" class="m-2 underline">Dittmer's Chat Room</a>
+						<div>
+							<a
+								href="https://www.linkedin.com/in/jason-dittmer-04773223/"
+								target="_blank"
+								class="m-1 underline">LinkedIn</a
+							> <a href="https://twitter.com/thedittmer" target="_blank" class="m-1 underline"
+								>Twitter</a
+							> <a href="https://www.facebook.com/thedittmer/" target="_blank" class="m-1 underline"
+								>Facebook</a
+							>
+						</div>
 					</div>
 				</div>
 			</div>
