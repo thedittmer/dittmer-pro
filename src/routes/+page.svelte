@@ -59,7 +59,7 @@
 					<div class="flex flex-col md:flex-row md:items-center justify-center mt-6 dark:text-white">
 						<a
 							href="/chat"
-							class="m-4 underline">Jason's Chat Room</a
+							class="m-4 underline">Dittmer's Chat Room</a
 						>
 						<a
 							href="https://www.linkedin.com/in/jason-dittmer-04773223/"
