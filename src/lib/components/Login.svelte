@@ -12,7 +12,7 @@
 	let errorMessage = '';
 	let error = '';
 
-	isSignUp = false;
+	isSignUp = true;
 	function setSignUp() {
 		isSignUp = true;
 		isReset = false;
@@ -28,7 +28,7 @@
 		error = '';
 		errorMessage = '';
 	}
-	isLogin = true;
+	isLogin = false;
 	function setLogin() {
 		isLogin = true;
 		isSignUp = false;
@@ -124,7 +124,7 @@
 				<div
 					in:fly={{ x: 200, duration: 300, delay: 400 }}
 					out:fade={{ duration: 300 }}
-					class="md:block flex flex-col"
+					class="flex flex-col"
 				>
 					<input
 						class="m-1 p-5 border border-accent rounded dark:bg-gray-700"
@@ -150,7 +150,7 @@
 					<div>
 						<div class="m-3">
 							<button
-								class=" px-5 md:px-10 py-1 text-center md:whitespace-nowrap md:text-lg"
+								class="dark:bg-gray-700 text-gray-700 dark:text-yellow-500 border px-5 md:px-10 py-1 text-center md:whitespace-nowrap md:text-lg"
 								on:click={signUp}>Sign Up</button
 							>
 						</div>
@@ -160,7 +160,7 @@
 				<div
 					in:fly={{ x: 200, duration: 300, delay: 400 }}
 					out:fade={{ duration: 300 }}
-					class="md:block flex flex-col"
+					class="flex flex-col"
 				>
 					<input
 						class="m-1 p-5 border border-accent rounded w-full dark:bg-gray-700"
@@ -180,7 +180,7 @@
 				<div
 					in:fly={{ x: 200, duration: 300, delay: 400 }}
 					out:fade={{ duration: 300 }}
-					class="md:block flex flex-col"
+					class="flex flex-col"
 				>
 					<input
 						class="m-1 p-5 border border-accent rounded dark:bg-gray-700"
@@ -203,14 +203,18 @@
 				</div>
 			{/if}
 		</form>
+		{#if !isLogin}
+			<button class="ml-4 underline dark:text-yellow-200 text-xl font-bold" on:click={setLogin}
+				>Login</button
+			>
+		{/if}
 		{#if !isSignUp}
-			<button class="ml-4 underline text-green-600 font-bold" on:click={setSignUp}>Create your account!</button>
+			<button class="ml-4 underline dark:text-yellow-200 text-xl font-bold" on:click={setSignUp}
+				>Create your account!</button
+			>
 		{/if}
 		{#if !isReset}
 			<button class="ml-4 underline" on:click={setReset}>Forget your password?</button>
-		{/if}
-		{#if !isLogin}
-			<button class="ml-4 underline" on:click={setLogin}>Back to Login</button>
 		{/if}
 	{/if}
 </div>
