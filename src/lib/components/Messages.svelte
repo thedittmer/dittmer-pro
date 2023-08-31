@@ -81,7 +81,7 @@
 	{#each messages as message (message.id)}
 		<div
 			class="py-4 flex flex-row"
-			in:fly={{ x: 200, duration: 300, delay: 400 }}
+			in:fly={{ y: -200, duration: 300 }}
 			out:fade={{ duration: 300 }}
 		>
 			<img class="w-10 h-10 rounded-full" src={getAvatarUrl(message.expand?.user)} alt="avatar" />
