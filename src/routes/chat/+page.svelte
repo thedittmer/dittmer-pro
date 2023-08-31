@@ -12,10 +12,10 @@
 </script>
 
 <svelte:head>
-	<title>Chat Live with Jason Dittmer</title>
+	<title>Jason's Chat Room</title>
 </svelte:head>
 
 <main class="p-5">
-	<h1 class="pb-2 text-lg md:text-xl font-bold text-gray-800 dark:text-white">Chat Live with Jason Dittmer</h1>
+	<h1 class="pb-2 text-lg md:text-xl font-bold text-gray-800 dark:text-white">Jason's Chat Room</h1>
 	<Messages />
 </main>
