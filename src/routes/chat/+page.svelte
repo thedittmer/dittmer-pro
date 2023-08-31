@@ -1,14 +1,5 @@
 <script>
 	import Messages from '$lib/components/Messages.svelte';
-
-	let visible = true;
-	function toggleVissible() {
-		visible = !visible;
-	}
-
-	setTimeout(() => {
-		visible = !visible;
-	}, 2000);
 </script>
 
 <svelte:head>
@@ -21,7 +12,7 @@
 		<h1 class="pb-2 pt-7 text-lg md:text-xl font-bold text-gray-800 dark:text-white">
 			Dittmer's Chat Room
 		</h1>
-		<p class="pb-2">Thanks for stoping by. This is just a chat room for fun. Feel free to leave a message.</p>
+		<p class="pb-2">Thanks for stoping by my chat room. Feel free to leave a message. I will reply as soon as I can.</p>
 	</div>
 
 	<Messages />

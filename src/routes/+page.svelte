@@ -53,7 +53,7 @@
 		</h1>
 		<p class="text-gray-800 dark:text-white">I can help you with your next project.</p>
 		<div class="flex flex-col md:items-center justify-center mt-6 dark:text-white">
-			<a href="/chat" class="m-2 underline">Dittmer's Chat Room</a>
+			<a href="/chat" class="m-2 underline pb-10">Leave me a message.</a>
 			<div>
 				<a
 					href="https://www.linkedin.com/in/jason-dittmer-04773223/"

@@ -79,21 +79,19 @@
 
 <div class="w-full">
 	{#each messages as message (message.id)}
-		{#if message.expand?.user?.banned !== true}
-			<div
-				class="py-4 flex flex-row"
-				in:fly={{ x: 200, duration: 300, delay: 400 }}
-				out:fade={{ duration: 300 }}
-			>
-				<img class="w-10 h-10 rounded-full" src={getAvatarUrl(message.expand?.user)} alt="avatar" />
-				<div class="px-5">
-					<p class="text-xs dark:text-yellow-400">
-						@{message.expand?.user?.username}
-						<Time timestamp={message.created} relative />
-					</p>
-					<p class="msg-text text-accent-content dark:text-white">{message.text}</p>
-				</div>
+		<div
+			class="py-4 flex flex-row"
+			in:fly={{ x: 200, duration: 300, delay: 400 }}
+			out:fade={{ duration: 300 }}
+		>
+			<img class="w-10 h-10 rounded-full" src={getAvatarUrl(message.expand?.user)} alt="avatar" />
+			<div class="px-5">
+				<p class="text-xs dark:text-yellow-400">
+					@{message.expand?.user?.username}
+					<Time timestamp={message.created} relative />
+				</p>
+				<p class="msg-text text-accent-content dark:text-white">{message.text}</p>
 			</div>
-		{/if}
+		</div>
 	{/each}
 </div>
