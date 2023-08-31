@@ -15,7 +15,7 @@
 	<title>Jason Dittmer | Web Developer and Software Engineer</title>
 </svelte:head>
 
-<main class="relative h-screen overflow-hidden font-mono bg-white dark:bg-gray-800">
+<main class="relative h-screen">
 	<div class="relative z-20 flex items-center">
 		<div class="container relative flex flex-col items-center justify-between px-6 py-6 mx-auto">
 			<div class="flex flex-col">

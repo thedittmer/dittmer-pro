@@ -29,6 +29,9 @@ devDependencies:
   eslint-plugin-svelte:
     specifier: ^2.30.0
     version: 2.33.0(eslint@8.48.0)(svelte@4.2.0)
+  pocketbase:
+    specifier: ^0.17.3
+    version: 0.17.3
   postcss:
     specifier: ^8.4.29
     version: 8.4.29
@@ -44,6 +47,9 @@ devDependencies:
   svelte-check:
     specifier: ^3.4.3
     version: 3.5.1(postcss@8.4.29)(svelte@4.2.0)
+  svelte-time:
+    specifier: ^0.8.0
+    version: 0.8.0
   tailwindcss:
     specifier: ^3.3.3
     version: 3.3.3
@@ -838,6 +844,10 @@ packages:
     hasBin: true
     dev: true
 
+  /dayjs@1.11.9:
+    resolution: {integrity: sha512-QvzAURSbQ0pKdIye2txOzNaHmxtUBXerpY0FJsFXUMKbIZeFm5ht1LS/jFsrncjnmtv8HsG0W2g6c0zUjZWmpA==}
+    dev: true
+
   /debug@4.3.4:
     resolution: {integrity: sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==}
     engines: {node: '>=6.0'}
@@ -1627,6 +1637,10 @@ packages:
     engines: {node: '>= 6'}
     dev: true
 
+  /pocketbase@0.17.3:
+    resolution: {integrity: sha512-tqtk7kd8K4/5BspCzqf8DcbjS+iCBLFdpC7s/d6hAuxeoqP5MH6llRICm22dldJDFcTa1chuCfyeeKoU5mYaHQ==}
+    dev: true
+
   /postcss-import@15.1.0(postcss@8.4.29):
     resolution: {integrity: sha512-hpr+J05B2FVYUAXHeK1YyI267J/dDDhMU6B6civm8hSY1jYJnBXxzKDKDswzJmtLHryrjhnDjqqp/49t8FALew==}
     engines: {node: '>=14.0.0'}
@@ -2040,6 +2054,12 @@ packages:
       strip-indent: 3.0.0
       svelte: 4.2.0
       typescript: 5.2.2
+    dev: true
+
+  /svelte-time@0.8.0:
+    resolution: {integrity: sha512-V0LBpJhYV2Q+jqiJ94ITAo51P6RIhrHQpDt3LCSk8PXfL2UMvSMlDzkqHq8mdKqmBCRZURnXhpynN03GQa/G/A==}
+    dependencies:
+      dayjs: 1.11.9
     dev: true
 
   /svelte@4.2.0:
