@@ -1,6 +1,5 @@
 <script>
-	import { fade, blur, fly, slide, scale, draw } from 'svelte/transition';
-	import { quintOut, quadIn } from 'svelte/easing';
+	import { fly } from 'svelte/transition';
 
 	let visible = true;
 	function toggleVissible() {
@@ -11,6 +10,10 @@
 		visible = !visible;
 	}, 2000);
 </script>
+
+<svelte:head>
+	<title>Jason Dittmer | Web Developer and Software Engineer</title>
+</svelte:head>
 
 <main class="relative h-screen overflow-hidden font-mono bg-white dark:bg-gray-800">
 	<div class="relative z-20 flex items-center">
@@ -50,7 +53,7 @@
 					<h2
 						class="max-w-3xl pb-2 mx-auto text-lg md:text-xl font-bold text-gray-800 dark:text-white"
 					>
-						Web Developer & Software Engineer
+						Web Developer and Software Engineer
 					</h2>
 					<p class="text-gray-800 dark:text-white">I can help you with your next project.</p>
 					<div class="flex flex-col md:flex-row md:items-center justify-center mt-6 dark:text-white">
