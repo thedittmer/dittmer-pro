@@ -15,9 +15,9 @@
 	<title>Dittmer's Chat Room</title>
 </svelte:head>
 
-<main class="p-5">
+<main class="p-5 max-w-prose">
 	<a href="/" class="underline dark:text-green-500 0">🔙 Back to Home</a>
-	<div class="max-w-prose dark:text-white pb-10">
+	<div class="dark:text-white pb-10">
 		<h1 class="pb-2 pt-7 text-lg md:text-xl font-bold text-gray-800 dark:text-white">
 			Dittmer's Chat Room
 		</h1>
