@@ -53,7 +53,7 @@
 		{#if $currentUser.banned !== true}
 			<form
 				on:submit|preventDefault={sendMessage}
-				in:fly={{ x: 200, duration: 300, delay: 400 }}
+				in:fly={{ y: -200, duration: 300 }}
 				out:fade={{ duration: 300 }}
 			>
 				<input

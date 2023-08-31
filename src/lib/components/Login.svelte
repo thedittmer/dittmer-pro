@@ -93,7 +93,7 @@
 	{#if $currentUser}
 		<div
 			class="flex flex-row max-w-md"
-			in:fly={{ x: 200, duration: 300, delay: 400 }}
+			in:fly={{ y: -200, duration: 300 }}
 			out:fade={{ duration: 300 }}
 		>
 			<span class="mr-3">Signed in as @{$currentUser.username}</span>
@@ -104,7 +104,7 @@
 			<!-- `{JSON.stringify(error)}` -->
 			<div
 				class="border border-red-500 rounded p-5"
-				in:fly={{ x: 200, duration: 300, delay: 400 }}
+				in:fly={{ y: -200, duration: 300 }}
 				out:fade={{ duration: 300 }}
 			>
 				{#if errorMessage}
@@ -121,11 +121,7 @@
 		{/if}
 		<form class="flex flex-col" on:submit|preventDefault>
 			{#if isSignUp}
-				<div
-					in:fly={{ x: 200, duration: 300, delay: 400 }}
-					out:fade={{ duration: 300 }}
-					class="flex flex-col"
-				>
+				<div in:fly={{ y: -200, duration: 300 }} out:fade={{ duration: 300 }} class="flex flex-col">
 					<input
 						class="m-1 p-5 border border-accent rounded dark:bg-gray-700"
 						type="text"
@@ -157,11 +153,7 @@
 					</div>
 				</div>
 			{:else if isReset}
-				<div
-					in:fly={{ x: 200, duration: 300, delay: 400 }}
-					out:fade={{ duration: 300 }}
-					class="flex flex-col"
-				>
+				<div in:fly={{ y: -200, duration: 300 }} out:fade={{ duration: 300 }} class="flex flex-col">
 					<input
 						class="m-1 p-5 border border-accent rounded w-full dark:bg-gray-700"
 						type="email"
@@ -177,11 +169,7 @@
 					</div>
 				</div>
 			{:else}
-				<div
-					in:fly={{ x: 200, duration: 300, delay: 400 }}
-					out:fade={{ duration: 300 }}
-					class="flex flex-col"
-				>
+				<div in:fly={{ y: -200, duration: 300 }} out:fade={{ duration: 300 }} class="flex flex-col">
 					<input
 						class="m-1 p-5 border border-accent rounded dark:bg-gray-700"
 						type="text"
