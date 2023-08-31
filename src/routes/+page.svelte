@@ -50,11 +50,11 @@
 				</div>
 				<div class="max-w-prose mx-auto md:text-center pt-4">
 					<p class="mt-3 text-lg md:text-2xl dark:text-white">Hi, I&#x27;m Jason Dittmer 🤘</p>
-					<h2
+					<h1
 						class="max-w-3xl pb-2 mx-auto text-lg md:text-xl font-bold text-gray-800 dark:text-white"
 					>
 						Web Developer and Software Engineer
-					</h2>
+					</h1>
 					<p class="text-gray-800 dark:text-white">I can help you with your next project.</p>
 					<div class="flex flex-col md:flex-row md:items-center justify-center mt-6 dark:text-white">
 						<a
