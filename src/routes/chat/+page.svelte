@@ -16,6 +16,6 @@
 </svelte:head>
 
 <main class="p-5">
-	<h1 class="pb-2 text-lg md:text-xl font-bold text-gray-800 dark:text-white">Live Chat App</h1>
+	<h1 class="pb-2 text-lg md:text-xl font-bold text-gray-800 dark:text-white">Chat Live with Jason Dittmer</h1>
 	<Messages />
 </main>
