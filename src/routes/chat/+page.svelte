@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head>
-	<title>Chat with Jason Dittmer</title>
+	<title>Chat Live with Jason Dittmer</title>
 </svelte:head>
 
 <main class="p-5">
