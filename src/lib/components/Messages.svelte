@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import { onMount, onDestroy } from 'svelte';
-	import { currentUser, pb } from '$lib/pocketbase';
+	import { currentUser, getAvatarUrl, pb } from '$lib/pocketbase';
 	import Login from '$lib/components/Login.svelte';
 	import Time from 'svelte-time';
 
@@ -85,12 +85,7 @@
 				in:fly={{ x: 200, duration: 300, delay: 400 }}
 				out:fade={{ duration: 300 }}
 			>
-				<img
-					class="w-10 h-10"
-					src={`https://avatars.dicebear.com/api/identicon/${message.expand?.user?.username}.svg`}
-					alt="avatar"
-					width="40px"
-				/>
+				<img class="w-10 h-10 rounded-full" src={getAvatarUrl(message.expand?.user)} alt="avatar" />
 				<div class="px-5">
 					<p class="text-xs dark:text-yellow-400">
 						@{message.expand?.user?.username}
