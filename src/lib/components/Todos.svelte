@@ -5,7 +5,7 @@
 	import { fly, fade } from 'svelte/transition';
 
 	let newTodo: string;
-	let todos = [];
+	let todos: any[] = [];
 	let unsubscribe: () => void;
 
 	onMount(async () => {
@@ -18,14 +18,16 @@
 
 		// Subscribe to realtime todos
 		unsubscribe = await pb.collection('todos').subscribe('*', async ({ action, record }) => {
-            
 			if (action === 'create') {
-                console.log('action', action, 'record', record);
+				console.log('action', action, 'record', record);
 
 				// Fetch associated user
 				const author = await pb.collection('users').getOne(record.author);
 				record.expand = { author };
 				todos = [record, ...todos];
+			}
+			if (action === 'delete') {
+				todos = todos.filter((m) => m.id !== record.id);
 			}
 		});
 	});
@@ -39,6 +41,14 @@
 			await pb.collection('todos').update(todo.id, data);
 		} catch (err) {
 			console.log('todo', todo);
+			console.log('ERR', err);
+		}
+	}
+	async function deleteTodo(todo: any) {
+		try {
+			await pb.collection('todos').delete(todo.id);
+		} catch (err) {
+			console.log('todo', todo.id);
 			console.log('ERR', err);
 		}
 	}
@@ -94,6 +104,7 @@
 						/>
 						<strong>{todo.title}</strong>
 					</label>
+					<button on:click={deleteTodo(todo)}>🚫</button>
 				</div>
 			{/each}
 		</div>
