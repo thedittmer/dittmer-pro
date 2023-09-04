@@ -22,9 +22,9 @@
 			work in progress.
 		</p>
 		<p class="pb-2">
-			My ambitions are to create more apps using the so-called Spock stack (Svelte + PocketBase).
+			My ambitions are to create more apps using this so-called Spock stack (Svelte + PocketBase).
 			Developing a todo app is a good way to work through most of the problems I will need to solve
-			when developing the type of software that I'm interested in creating.
+			when developing the type of software that I want to build.
 		</p>
 		<p class="pb-2">
 			Create some todos and let me know what you think in <a href="/chat" class="underline"
