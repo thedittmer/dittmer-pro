@@ -1,12 +1,21 @@
 <script lang="ts">
-	import Login from '$lib/components/Login.svelte';
+	import {
+		dndzone,
+		overrideItemIdKeyNameBeforeInitialisingDndZones,
+		type DndEvent
+	} from 'svelte-dnd-action';
+	import { flip } from 'svelte/animate';
 	import { currentUser, getAvatarUrl, pb } from '$lib/pocketbase';
 	import { onMount, onDestroy } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
 
-	let newTodo: string;
-	let todos: any[] = [];
+	overrideItemIdKeyNameBeforeInitialisingDndZones('index');
+
+	let newItem: string;
 	let unsubscribe: () => void;
+
+	const flipDurationMs = 200;
+	let items: any[] = [];
 
 	onMount(async () => {
 		// Get initial todos
@@ -14,7 +23,7 @@
 			sort: '-created',
 			expand: 'user'
 		});
-		todos = resultList.items;
+		items = resultList.items;
 
 		// Subscribe to realtime todos
 		unsubscribe = await pb.collection('todos').subscribe('*', async ({ action, record }) => {
@@ -24,14 +33,18 @@
 				// Fetch associated user
 				const author = await pb.collection('users').getOne(record.author);
 				record.expand = { author };
-				todos = [record, ...todos];
+				items = [record, ...items];
 			}
 			if (action === 'delete') {
-				todos = todos.filter((m) => m.id !== record.id);
+				items = items.filter((m) => m.id !== record.id);
 			}
 		});
 	});
 
+	async function handleSort(e: CustomEvent<DndEvent>) {
+		items = e.detail.items as { index: number; title: string }[];
+        
+	}
 	async function toggleDone(todo: any) {
 		todo.done;
 		try {
@@ -53,20 +66,20 @@
 		}
 	}
 	async function sendTodo() {
+		let itemsLenght = items.length + 1;
 		const data = {
-			title: newTodo,
-			author: $currentUser.id
+			title: newItem,
+			author: $currentUser.id,
+			index: itemsLenght
 		};
 		const todoCreated = await pb.collection('todos').create(data);
-		newTodo = '';
+		newItem = '';
 	}
 
 	onDestroy(() => {
 		unsubscribe?.();
 	});
 </script>
-
-<Login />
 
 {#if $currentUser}
 	<div class="max-w-lg pt-5 pb-6 dark:text-white">
@@ -80,35 +93,41 @@
 					placeholder="Todo Title"
 					type="text"
 					class="appearance-none block w-full border border-blue-500 rounded py-3 px-4 mb-3 leading-tight focus:outline-none text-black dark:text-yellow-500 dark:bg-gray-700 dark:border-gray-600"
-					bind:value={newTodo}
+					bind:value={newItem}
 				/>
 				<button
 					class="dark:bg-gray-700 text-gray-700 dark:text-yellow-500 border px-5 md:px-10 py-1 text-center md:whitespace-nowrap md:text-lg"
-					type="submit">Send</button
+					type="submit">Send Item</button
 				>
 			</form>
 		{:else}
 			<h2 class="text-red-500">You are banned!</h2>
 		{/if}
 	</div>
-	{#if todos.length > 0}
-		<div class="flex flex-col">
-			{#each todos as todo}
-				<div class="flex justify-between mt-10">
-					<label for={todo.id}>
+	{#if items.length > 0}
+		<section
+			use:dndzone={{ items, flipDurationMs }}
+			on:consider={handleSort}
+			on:finalize={handleSort}
+			class="flex flex-col"
+		>
+			{#each items as item (item.index)}
+				<div
+					animate:flip={{ duration: flipDurationMs }}
+					class="dark:text-white flex justify-between mt-10"
+				>
+					<label for={item.id}>
 						<input
-							bind:checked={todo.done}
-							on:change={toggleDone(todo)}
+							bind:checked={item.done}
+							on:change={toggleDone(item)}
 							type="checkbox"
-							id={todo.id}
+							id={item.id}
 						/>
-						<strong>{todo.title}</strong>
+						<strong>{item.title}</strong>
 					</label>
-					<button on:click={deleteTodo(todo)}>🚫</button>
+					<button on:click={deleteTodo(item)}>🚫</button>
 				</div>
 			{/each}
-		</div>
-	{:else}
-		No todos
+		</section>
 	{/if}
 {/if}
