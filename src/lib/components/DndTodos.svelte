@@ -16,6 +16,7 @@
 
 	const flipDurationMs = 200;
 	let items: any[] = [];
+	let enableUpdate = false;
 
 	onMount(async () => {
 		// Get initial todos
@@ -41,9 +42,11 @@
 		});
 	});
 
+	// I was not able to find a way to update all the recods at once
+	// so I had to do it one by one
 	async function handleSort(e: CustomEvent<DndEvent>) {
-		items = e.detail.items as { index: number; title: string }[];
-        
+		items = e.detail.items as { index: number; id: string }[];
+		enableUpdate = true;
 	}
 	async function toggleDone(todo: any) {
 		todo.done;
@@ -79,6 +82,28 @@
 	onDestroy(() => {
 		unsubscribe?.();
 	});
+	async function sendTodoDisplayIndex() {
+		const newItemsIndex = items as { index: number; id: string }[];
+		console.log('items', newItemsIndex);
+
+		// await pb.collection('meta').update('todoDisplayInde', {
+		// 	newItemsIndex
+		// });
+
+		// items.forEach(async (rec) => {
+		// 	console.log('rec', rec);
+
+		// 	await pb.collection('todos').update(rec.id, {
+		// 		index: rec.index
+		// 	});
+
+		// 	const record = await pb.collection('todos').update(rec.id, {
+		// 		id: rec.id,
+		// 		index: rec.index,
+		// 		requestKey: null
+		// 	});
+		// });
+	}
 </script>
 
 {#if $currentUser}
@@ -105,6 +130,9 @@
 		{/if}
 	</div>
 	{#if items.length > 0}
+		{#if enableUpdate}
+			<button on:click={sendTodoDisplayIndex}>Update Order</button>
+		{/if}
 		<section
 			use:dndzone={{ items, flipDurationMs }}
 			on:consider={handleSort}

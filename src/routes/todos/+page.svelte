@@ -1,4 +1,5 @@
 <script>
+	import DndTodos from '$lib/components/DndTodos.svelte';
 	import Todos from '$lib/components/Todos.svelte';
 </script>
 
@@ -35,6 +36,6 @@
 			By the way, unlike the public messages in the chatroom, your todos are private. Of course, I
 			can see them, but no one else can.
 		</p>
-		<Todos />
+		<DndTodos />
 	</div>
 </main>
