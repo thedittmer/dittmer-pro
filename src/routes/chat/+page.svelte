@@ -16,17 +16,6 @@
 			Thanks for stoping by my chat room. Feel free to leave a message. I will reply as soon as I
 			can.
 		</p>
-		<p class="pb-2">
-			I developed this chatroom with <a
-				href="https://pocketbase.io"
-				class="underline"
-				target="_blank">PocketBase</a
-			>
-			and <a href="https://kit.svelte.dev" class="underline" target="_blank">Sveltekit</a>. This
-			<a href="https://www.youtube.com/watch?v=gUYBFDPZ5qk" target="_blank" class="underline"
-				>Fireship video</a
-			> was is an excellent resource for me.
-		</p>
 	</div>
 
 	<Messages />
