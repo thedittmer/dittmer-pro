@@ -51,11 +51,13 @@
 <main class="p-5">
 	<div class="max-w-prose mx-auto pt-4">
 		<h1 class="flex flex-col md:text-center">
-			<span class="mt-3 text-2xl md:text-4xl dark:text-white font-bold">HOUSE FOR SALE</span>
+			<span class="mt-3 text-2xl md:text-4xl dark:text-white font-bold">HOUSE FOR SALE $165,000</span>
 			<span class="max-w-3xl pb-2 text-lg md:text-xl font-bold text-gray-800 dark:text-white pt-4">
-				818 Riverside Dr, Neosho, MO 64850<br />3 Bedroom, 1 Bathroom
+				818 Riverside Dr, Neosho, MO 64850
 			</span>
-			<span class="text-gray-800 dark:text-white text-xl">$165,0000</span>
+			<span class="text-gray-800 dark:text-white text-xl"
+				>3 Bedroom, 1 Bathroom, Newly Remodeled, New Roof, Beautiful Yard</span
+			>
 		</h1>
 		<h2
 			class="md:text-center max-w-3xl pb-2 mx-auto text-lg md:text-xl font-bold text-gray-800 dark:text-white pt-4"
