@@ -5,7 +5,7 @@ export async function load({ locals }) {
 	let route;
 	try {
 		route = await locals.pb.collection('pages').getFirstListItem(`slug="818-riverside-dr-neosho-mo"`);
-		console.log('route', route);
+		
 	} catch (err) {
 		throw error(404);
 	}

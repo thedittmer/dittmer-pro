@@ -19,7 +19,7 @@
 		// Subscribe to realtime todos
 		unsubscribe = await pb.collection('todos').subscribe('*', async ({ action, record }) => {
 			if (action === 'create') {
-				console.log('action', action, 'record', record);
+				
 
 				// Fetch associated user
 				const author = await pb.collection('users').getOne(record.author);

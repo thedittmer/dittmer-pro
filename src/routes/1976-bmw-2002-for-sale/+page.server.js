@@ -5,7 +5,7 @@ export async function load({ locals }) {
 	let route;
 	try {
 		route = await locals.pb.collection('pages').getFirstListItem(`slug="1976-bmw-2002-for-sale"`);
-		console.log('route', route);
+		
 	} catch (err) {
 		throw error(404);
 	}
