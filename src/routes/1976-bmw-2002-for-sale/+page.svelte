@@ -48,9 +48,7 @@
 	<div class="max-w-prose mx-auto pt-4">
 		<h1 class="flex flex-col md:text-center">
 			<span class="mt-3 text-2xl md:text-4xl dark:text-white font-bold">FOR SALE $5000</span>
-			<span
-				class="max-w-3xl pb-2 text-lg md:text-xl font-bold text-gray-800 dark:text-white pt-4"
-			>
+			<span class="max-w-3xl pb-2 text-lg md:text-xl font-bold text-gray-800 dark:text-white pt-4">
 				Vintage 1976 BMW 2002 (2 Series)
 			</span>
 			<span class="text-gray-800 dark:text-white">With 1984 E30 318i M10 Engine</span>
@@ -58,7 +56,7 @@
 		<h2
 			class="md:text-center max-w-3xl pb-2 mx-auto text-lg md:text-xl font-bold text-gray-800 dark:text-white pt-4"
 		>
-			Call <a href="tel:+14173121469" class="underline">(417) 312-1469</a>
+			Call or text <a href="tel:+14173121469" class="underline">(417) 312-1469</a>
 		</h2>
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-5 py-10">
 			{#each route.images as image}
@@ -82,7 +80,7 @@
 		<h2
 			class="md:text-center max-w-3xl pb-2 mx-auto text-lg md:text-xl font-bold text-gray-800 dark:text-white pt-4"
 		>
-			Call <a href="tel:+14173121469" class="underline">(417) 312-1469</a>
+			Call or text <a href="tel:+14173121469" class="underline">(417) 312-1469</a>
 		</h2>
 	</div>
 </main>
