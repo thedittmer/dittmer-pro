@@ -22,6 +22,10 @@
 	<title>{route.title}</title>
 </svelte:head>
 
+<div class="p-5">
+	<a href="/" class="underline dark:text-green-500 0">🔙 Back to Home</a>
+</div>
+
 <div class="relative w-52 h-52 md:w-96 md:h-96 mx-auto">
 	{#if visible}
 		<button on:click={toggleVissible}>

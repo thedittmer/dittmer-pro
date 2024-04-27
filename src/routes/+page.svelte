@@ -48,7 +48,9 @@
 <main class="p-5">
 	<div class="max-w-prose mx-auto md:text-center pt-4">
 		<p class="mt-3 text-lg md:text-2xl dark:text-white">Hi, I'm Jason Dittmer ✌️</p>
-		<h1 class="max-w-3xl pb-2 mx-auto text-lg md:text-xl font-bold text-gray-800 dark:text-white pt-4">
+		<h1
+			class="max-w-3xl pb-2 mx-auto text-lg md:text-xl font-bold text-gray-800 dark:text-white pt-4"
+		>
 			Local Web Developer in Neosho, Missouri
 		</h1>
 		<p class="text-gray-800 dark:text-white">JavaScript Specailist</p>
@@ -64,6 +66,12 @@
 				<a href="https://www.facebook.com/thedittmer/" target="_blank" class="m-1 underline"
 					>Facebook</a
 				>
+			</div>
+		</div>
+		<div class="flex flex-col md:items-center justify-center mt-6 dark:text-white">
+			<h2 class="text-lg md:text-xl font-bold text-gray-800 dark:text-white">For sale</h2>
+			<div>
+				<a href="/1976-bmw-2002-for-sale" class="m-1 underline">1976 BMW 2002 For Sale</a>
 			</div>
 		</div>
 	</div>
