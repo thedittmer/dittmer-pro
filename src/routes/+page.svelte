@@ -68,9 +68,5 @@
 				>
 			</div>
 		</div>
-		<div class="flex flex-col md:items-center justify-center mt-6 dark:text-white">
-			<h2 class="text-lg md:text-xl font-bold text-gray-800 dark:text-white">For sale</h2>
-			<a href="/1976-bmw-2002-for-sale" class="m-1 underline">1976 BMW 2002</a>
-		</div>
 	</div>
 </main>
