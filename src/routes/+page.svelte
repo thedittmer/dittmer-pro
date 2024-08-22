@@ -51,9 +51,9 @@
 		<h1
 			class="max-w-3xl pb-2 mx-auto text-lg md:text-xl font-bold text-gray-800 dark:text-white pt-4"
 		>
-			Local Web Developer in Neosho, Missouri
+			JavaScript and Golang Software Engineer
 		</h1>
-		<p class="text-gray-800 dark:text-white">JavaScript Specailist</p>
+		<p class="text-gray-800 dark:text-white">Neosho, Missouri</p>
 		<div class="flex flex-col md:items-center justify-center mt-6 dark:text-white">
 			<a href="/chat" class="m-2 underline pb-1">Leave me a message.</a>
 			<div>
@@ -61,10 +61,6 @@
 					href="https://www.linkedin.com/in/jason-dittmer-04773223/"
 					target="_blank"
 					class="m-1 underline">LinkedIn</a
-				>
-				<a href="https://twitter.com/thedittmer" target="_blank" class="m-1 underline">Twitter</a>
-				<a href="https://www.facebook.com/thedittmer/" target="_blank" class="m-1 underline"
-					>Facebook</a
 				>
 			</div>
 		</div>
