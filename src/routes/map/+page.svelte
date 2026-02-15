@@ -1,6 +1,5 @@
 <iframe
-	src="https://dev.neosho.sale/embed/map"
-	title="Neosho Garage Sale Map"
+	src="https://www.neosho.sale/embed/map"
 	width="100%"
 	height="500"
 	frameborder="0"
