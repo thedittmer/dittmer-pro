@@ -5,36 +5,41 @@
 		type DndEvent
 	} from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
-	import { currentUser, getAvatarUrl, pb } from '$lib/pocketbase';
+	import { currentUser, pb } from '$lib/pocketbase';
 	import { onMount, onDestroy } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
+	import { openLogin } from '$lib/auth/login-state';
 
 	overrideItemIdKeyNameBeforeInitialisingDndZones('index');
 
-	let newItem: string;
-	let unsubscribe: () => void;
+	type TodoItem = {
+		id: string;
+		index: number;
+		title: string;
+		done: boolean;
+		author?: string;
+		expand?: { author?: unknown };
+	};
+
+	let newItem = $state('');
+	let items = $state<TodoItem[]>([]);
+	let enableUpdate = $state(false);
+	let unsubscribe: (() => void) | undefined;
 
 	const flipDurationMs = 200;
-	let items: any[] = [];
-	let enableUpdate = false;
 
 	onMount(async () => {
-		// Get initial todos
-		const resultList = await pb.collection('todos').getList(1, 50, {
+		const resultList = await pb.collection('todos').getList<TodoItem>(1, 50, {
 			sort: '-created',
 			expand: 'user'
 		});
 		items = resultList.items;
 
-		// Subscribe to realtime todos
 		unsubscribe = await pb.collection('todos').subscribe('*', async ({ action, record }) => {
 			if (action === 'create') {
-				
-
-				// Fetch associated user
 				const author = await pb.collection('users').getOne(record.author);
-				record.expand = { author };
-				items = [record, ...items];
+				const next = { ...record, expand: { author } } as unknown as TodoItem;
+				items = [next, ...items];
 			}
 			if (action === 'delete') {
 				items = items.filter((m) => m.id !== record.id);
@@ -42,25 +47,25 @@
 		});
 	});
 
-	// I was not able to find a way to update all the recods at once
-	// so I had to do it one by one
-	async function handleSort(e: CustomEvent<DndEvent>) {
-		items = e.detail.items as { index: number; id: string }[];
+	onDestroy(() => {
+		unsubscribe?.();
+	});
+
+	function handleSort(e: CustomEvent<DndEvent<TodoItem>>) {
+		items = e.detail.items;
 		enableUpdate = true;
 	}
-	async function toggleDone(todo: any) {
-		todo.done;
+
+	async function toggleDone(todo: TodoItem) {
 		try {
-			const data = {
-				done: todo.done
-			};
-			await pb.collection('todos').update(todo.id, data);
+			await pb.collection('todos').update(todo.id, { done: todo.done });
 		} catch (err) {
 			console.log('todo', todo);
 			console.log('ERR', err);
 		}
 	}
-	async function deleteTodo(todo: any) {
+
+	async function deleteTodo(todo: TodoItem) {
 		try {
 			await pb.collection('todos').delete(todo.id);
 		} catch (err) {
@@ -68,49 +73,35 @@
 			console.log('ERR', err);
 		}
 	}
+
 	async function sendTodo() {
-		let itemsLenght = items.length + 1;
+		if (!$currentUser) return;
 		const data = {
 			title: newItem,
 			author: $currentUser.id,
-			index: itemsLenght
+			index: items.length + 1
 		};
-		const todoCreated = await pb.collection('todos').create(data);
+		await pb.collection('todos').create(data);
 		newItem = '';
 	}
 
-	onDestroy(() => {
-		unsubscribe?.();
-	});
-	async function sendTodoDisplayIndex() {
-		const newItemsIndex = items as { index: number; id: string }[];
-		console.log('items', newItemsIndex);
-
-		// await pb.collection('meta').update('todoDisplayInde', {
-		// 	newItemsIndex
-		// });
-
-		// items.forEach(async (rec) => {
-		// 	console.log('rec', rec);
-
-		// 	await pb.collection('todos').update(rec.id, {
-		// 		index: rec.index
-		// 	});
-
-		// 	const record = await pb.collection('todos').update(rec.id, {
-		// 		id: rec.id,
-		// 		index: rec.index,
-		// 		requestKey: null
-		// 	});
-		// });
+	function sendTodoDisplayIndex() {
+		console.log('items', items);
 	}
 </script>
 
-{#if $currentUser}
+{#if !$currentUser}
+	<div class="dark:text-white pt-4">
+		<button class="underline" onclick={() => openLogin()}>🔒 Sign in to manage your todos</button>
+	</div>
+{:else}
 	<div class="max-w-lg pt-5 pb-6 dark:text-white">
 		{#if $currentUser.banned !== true}
 			<form
-				on:submit|preventDefault={sendTodo}
+				onsubmit={(e) => {
+					e.preventDefault();
+					sendTodo();
+				}}
 				in:fly={{ y: -200, duration: 300 }}
 				out:fade={{ duration: 300 }}
 			>
@@ -121,8 +112,9 @@
 					bind:value={newItem}
 				/>
 				<button
+					type="submit"
 					class="dark:bg-gray-700 text-gray-700 dark:text-yellow-500 border px-5 md:px-10 py-1 text-center md:whitespace-nowrap md:text-lg"
-					type="submit">Send Item</button
+					>Send Item</button
 				>
 			</form>
 		{:else}
@@ -131,12 +123,12 @@
 	</div>
 	{#if items.length > 0}
 		{#if enableUpdate}
-			<button on:click={sendTodoDisplayIndex}>Update Order</button>
+			<button onclick={sendTodoDisplayIndex}>Update Order</button>
 		{/if}
 		<section
 			use:dndzone={{ items, flipDurationMs }}
-			on:consider={handleSort}
-			on:finalize={handleSort}
+			onconsider={handleSort}
+			onfinalize={handleSort}
 			class="flex flex-col"
 		>
 			{#each items as item (item.index)}
@@ -147,13 +139,13 @@
 					<label for={item.id}>
 						<input
 							bind:checked={item.done}
-							on:change={toggleDone(item)}
+							onchange={() => toggleDone(item)}
 							type="checkbox"
 							id={item.id}
 						/>
 						<strong>{item.title}</strong>
 					</label>
-					<button on:click={deleteTodo(item)}>🚫</button>
+					<button onclick={() => deleteTodo(item)}>🚫</button>
 				</div>
 			{/each}
 		</section>

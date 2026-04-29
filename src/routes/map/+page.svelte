@@ -1,7 +1,19 @@
-<div style="position:relative;width:100%;padding-top:75%;min-height:400px;">
-	<iframe
-		src="https://www.neosho.sale/embed/map"
-		style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;border-radius:8px;"
-		allowfullscreen
-	/>
-</div>
+<svelte:head>
+	<title>Neosho Sale Map</title>
+</svelte:head>
+
+<section class="map">
+	<iframe title="Neosho Sale Map" src="https://www.neosho.sale/embed/map" allowfullscreen></iframe>
+</section>
+
+<style>
+	.map {
+		position: fixed;
+		inset: 4rem 0 0 0;
+	}
+	iframe {
+		width: 100%;
+		height: 100%;
+		border: 0;
+	}
+</style>

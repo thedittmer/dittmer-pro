@@ -1,26 +1,26 @@
 import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
-import PocketBase from 'pocketbase';
+import { browser } from '$app/environment';
+import PocketBase, { type AuthRecord } from 'pocketbase';
 import { writable } from 'svelte/store';
 
 export const pb = new PocketBase(PUBLIC_POCKETBASE_URL);
 
-export const currentUser = writable(pb.authStore.model);
+export const currentUser = writable<AuthRecord>(pb.authStore.record);
 
-pb.authStore.onChange((auth) => {
-	
-	currentUser.set(pb.authStore.model);
+function syncCookie() {
+	if (!browser) return;
+	// Browsers silently drop httpOnly cookies set from JS, so explicitly disable it.
+	document.cookie = pb.authStore.exportToCookie({
+		secure: location.protocol === 'https:',
+		sameSite: 'Lax',
+		httpOnly: false,
+		path: '/'
+	});
+}
+
+if (browser && pb.authStore.isValid) syncCookie();
+
+pb.authStore.onChange(() => {
+	currentUser.set(pb.authStore.record);
+	syncCookie();
 });
-
-export const getAvatarUrl = (user: any) => {
-	let avatarUrl = '';
-	if (user?.avatar) {
-		const collectionId = user?.collectionId;
-		const recordId = user?.id;
-		const fileName = user?.avatar;
-		const size = '0x0';
-		avatarUrl = `${PUBLIC_POCKETBASE_URL}/api/files/${collectionId}/${recordId}/${fileName}?thumb=${size}`;
-	} else {
-		avatarUrl = `https://avatars.dicebear.com/api/bottts/${user?.username}.svg`;
-	}
-	return avatarUrl;
-};
