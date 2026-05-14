@@ -283,7 +283,7 @@
 	}
 	.primary {
 		background: var(--color-accent);
-		color: #000;
+		color: var(--color-on-accent);
 		border: 0;
 		padding: 0.7rem 1.4rem;
 		font-family: var(--font-mono);

@@ -83,14 +83,14 @@
 
 {#if $loginOpen}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+		class="backdrop"
 		transition:fade={{ duration: 150 }}
 		onclick={close}
 		onkeydown={(e) => e.key === 'Escape' && close()}
 		role="presentation"
 	>
 		<div
-			class="bg-white dark:bg-gray-800 dark:text-white rounded-lg p-6 w-full max-w-sm shadow-xl"
+			class="dialog"
 			transition:scale={{ duration: 200, start: 0.95 }}
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
@@ -99,8 +99,8 @@
 			aria-labelledby="login-title"
 			tabindex="-1"
 		>
-			<div class="flex justify-between items-center mb-4">
-				<h2 id="login-title" class="text-lg font-bold">
+			<div class="head">
+				<h2 id="login-title">
 					{#if $currentUser}
 						Account
 					{:else if stage === 'email'}
@@ -111,27 +111,20 @@
 						✓ Signed in
 					{/if}
 				</h2>
-				<button onclick={close} aria-label="Close" class="text-2xl leading-none opacity-60 hover:opacity-100">×</button>
+				<button onclick={close} aria-label="Close" class="x">×</button>
 			</div>
 
 			{#if $currentUser}
-				<p class="mb-4">
+				<p class="who">
 					Signed in as <strong>@{$currentUser.username}</strong>
 					{#if $currentUser.admin}
-						<span class="ml-2 text-xs px-2 py-0.5 bg-yellow-200 text-yellow-900 rounded">admin</span>
+						<span class="badge">admin</span>
 					{/if}
 				</p>
-				<button
-					onclick={signOut}
-					class="border px-4 py-2 dark:bg-gray-700 dark:text-yellow-500 w-full"
-				>
-					Sign out
-				</button>
+				<button onclick={signOut} class="primary">Sign out</button>
 			{:else if stage === 'email'}
-				<form onsubmit={requestCode} class="space-y-3">
-					{#if errorMessage}
-						<div class="text-red-500 text-sm">{errorMessage}</div>
-					{/if}
+				<form onsubmit={requestCode}>
+					{#if errorMessage}<div class="error">{errorMessage}</div>{/if}
 					<input
 						bind:this={emailInput}
 						bind:value={email}
@@ -139,24 +132,15 @@
 						placeholder="Email address"
 						required
 						autocomplete="email"
-						class="w-full p-3 border rounded dark:bg-gray-700"
 					/>
-					<button
-						type="submit"
-						disabled={busy}
-						class="w-full border px-4 py-2 dark:bg-gray-700 dark:text-yellow-500 disabled:opacity-50"
-					>
+					<button type="submit" disabled={busy} class="primary">
 						{busy ? 'Sending…' : 'Send code'}
 					</button>
 				</form>
 			{:else if stage === 'code'}
-				<form onsubmit={verifyCode} class="space-y-3">
-					{#if errorMessage}
-						<div class="text-red-500 text-sm">{errorMessage}</div>
-					{/if}
-					<p class="text-sm opacity-70">
-						We sent an 8-character code to <strong>{email}</strong>.
-					</p>
+				<form onsubmit={verifyCode}>
+					{#if errorMessage}<div class="error">{errorMessage}</div>{/if}
+					<p class="muted">We sent an 8-character code to <strong>{email}</strong>.</p>
 					<input
 						bind:this={codeInput}
 						bind:value={code}
@@ -167,26 +151,154 @@
 						required
 						minlength={8}
 						maxlength={8}
-						class="w-full p-3 border rounded font-mono text-center text-lg tracking-widest dark:bg-gray-700"
+						class="code-input"
 					/>
-					<button
-						type="submit"
-						disabled={busy}
-						class="w-full border px-4 py-2 dark:bg-gray-700 dark:text-yellow-500 disabled:opacity-50"
-					>
+					<button type="submit" disabled={busy} class="primary">
 						{busy ? 'Verifying…' : 'Verify'}
 					</button>
-					<button
-						type="button"
-						onclick={() => (stage = 'email')}
-						class="text-sm opacity-60 hover:opacity-100 underline"
-					>
+					<button type="button" onclick={() => (stage = 'email')} class="text-btn">
 						Use a different email
 					</button>
 				</form>
 			{:else}
-				<p class="text-green-600 dark:text-green-400">You're in.</p>
+				<p class="success">You're in.</p>
 			{/if}
 		</div>
 	</div>
 {/if}
+
+<style>
+	.backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 50;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.6);
+		padding: 1rem;
+	}
+
+	.dialog {
+		background: var(--color-surface);
+		color: var(--color-text);
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		padding: 1.5rem;
+		width: 100%;
+		max-width: 22rem;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+	}
+
+	.head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1rem;
+	}
+	.head h2 {
+		font-family: var(--font-display);
+		font-style: italic;
+		font-weight: 400;
+		font-size: 1.4rem;
+	}
+
+	.x {
+		background: transparent;
+		border: 0;
+		color: var(--color-muted);
+		font-size: 1.6rem;
+		line-height: 1;
+		cursor: pointer;
+	}
+	.x:hover {
+		color: var(--color-text);
+	}
+
+	form {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	input {
+		width: 100%;
+		padding: 0.75rem 0.9rem;
+		background: var(--color-surface-2);
+		color: var(--color-text);
+		border: 1px solid var(--color-border);
+		border-radius: 3px;
+		font: inherit;
+		font-size: 16px; /* avoid iOS auto-zoom */
+	}
+	input:focus {
+		outline: none;
+		border-color: var(--color-accent);
+	}
+
+	.code-input {
+		font-family: var(--font-mono);
+		text-align: center;
+		letter-spacing: 0.3em;
+		font-size: 1.2rem;
+	}
+
+	.primary {
+		background: var(--color-accent);
+		color: var(--color-on-accent);
+		border: 0;
+		padding: 0.7rem 1rem;
+		border-radius: 3px;
+		font-family: var(--font-mono);
+		font-size: 0.78rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+	.primary:disabled {
+		opacity: 0.5;
+	}
+
+	.text-btn {
+		background: transparent;
+		border: 0;
+		color: var(--color-muted);
+		font-size: 0.85rem;
+		text-decoration: underline;
+		cursor: pointer;
+		padding: 0.25rem 0;
+	}
+	.text-btn:hover {
+		color: var(--color-text);
+	}
+
+	.muted {
+		color: var(--color-muted);
+		font-size: 0.9rem;
+	}
+
+	.who {
+		margin-bottom: 1rem;
+	}
+
+	.badge {
+		margin-left: 0.5rem;
+		font-family: var(--font-mono);
+		font-size: 0.65rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		padding: 0.15rem 0.5rem;
+		background: var(--color-accent);
+		color: var(--color-on-accent);
+		border-radius: 2px;
+	}
+
+	.error {
+		color: #ff6b6b;
+		font-size: 0.85rem;
+	}
+
+	.success {
+		color: #6bc28b;
+	}
+</style>

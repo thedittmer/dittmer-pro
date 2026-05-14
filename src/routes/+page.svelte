@@ -251,7 +251,7 @@
 	}
 	.tagline-actions .primary {
 		background: var(--color-accent);
-		color: #000;
+		color: var(--color-on-accent);
 		border: 0;
 		padding: 0.4rem 0.9rem;
 		border-radius: 3px;

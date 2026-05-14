@@ -5,6 +5,20 @@
 		<link rel="icon" href="%sveltekit.assets%/favicon.ico" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="theme-color" content="#000000" />
+		<script>
+			// Set theme before paint to avoid flash. Saved choice wins; otherwise OS preference.
+			(function () {
+				try {
+					var t = localStorage.getItem('theme');
+					if (t !== 'light' && t !== 'dark') {
+						t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+					}
+					document.documentElement.setAttribute('data-theme', t);
+				} catch (e) {
+					document.documentElement.setAttribute('data-theme', 'dark');
+				}
+			})();
+		</script>
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 		<link

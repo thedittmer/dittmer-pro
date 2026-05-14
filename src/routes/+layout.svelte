@@ -7,6 +7,7 @@
 	import { page } from '$app/state';
 	import LoginModal from '$lib/auth/LoginModal.svelte';
 	import HiddenLoginTrigger from '$lib/auth/HiddenLoginTrigger.svelte';
+	import ThemeToggle from '$lib/ThemeToggle.svelte';
 
 	let { children } = $props();
 
@@ -24,6 +25,10 @@
 
 <HiddenLoginTrigger />
 <LoginModal />
+
+<div class="theme-corner">
+	<ThemeToggle />
+</div>
 
 <main class="site-main">
 	{@render children()}
@@ -43,6 +48,13 @@
 
 	.site-main {
 		min-height: 100vh;
+	}
+
+	.theme-corner {
+		position: fixed;
+		top: max(0.75rem, env(safe-area-inset-top));
+		right: max(0.75rem, env(safe-area-inset-right));
+		z-index: 40;
 	}
 
 	.site-footer {
