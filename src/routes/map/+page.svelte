@@ -6,12 +6,14 @@
 	import { invalidateAll } from '$app/navigation';
 	import StopForm from '$lib/trips/StopForm.svelte';
 	import StopDetail from '$lib/trips/StopDetail.svelte';
+	import TripDetail from '$lib/trips/TripDetail.svelte';
 	import type { Stop } from '$lib/trips/types';
 
 	let { data } = $props();
 
 	let stopFormOpen = $state(false);
 	let selectedStop = $state<Stop | null>(null);
+	let tripDetailOpen = $state(false);
 	let lastKnownLocation = $state<{ lat: number; lng: number } | null>(null);
 	let stopMarkers: any[] = [];
 	let mapLoaded = $state(false);
@@ -172,6 +174,12 @@
 	<div class="top-bar">
 		<a href="/" class="chip back" aria-label="Back to posts">←</a>
 
+		{#if data.currentTrip}
+			<button type="button" class="chip trip" onclick={() => (tripDetailOpen = true)}>
+				<span class="trip-name">{data.currentTrip.name}</span>
+			</button>
+		{/if}
+
 		<div class="chip status">
 			{#if locationStatus === 'pending'}
 				<span class="dot pulse"></span>
@@ -215,6 +223,14 @@
 	<StopDetail stop={selectedStop} onClose={() => (selectedStop = null)} />
 {/if}
 
+{#if tripDetailOpen && data.currentTrip}
+	<TripDetail
+		trip={data.currentTrip}
+		stops={data.stops}
+		onClose={() => (tripDetailOpen = false)}
+	/>
+{/if}
+
 <style>
 	.map {
 		position: fixed;
@@ -234,13 +250,32 @@
 	.top-bar {
 		position: absolute;
 		inset: 0 0 auto 0;
-		display: flex;
-		align-items: center;
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		grid-template-areas: 'back trip space';
+		align-items: start;
 		gap: 0.5rem;
 		padding: 0.75rem 1rem;
 		padding-top: max(0.75rem, env(safe-area-inset-top));
+		padding-right: max(4rem, env(safe-area-inset-right));
 		pointer-events: none;
 		z-index: 40;
+	}
+
+	.chip.back {
+		grid-area: back;
+	}
+
+	.chip.trip {
+		grid-area: trip;
+		justify-self: center;
+		max-width: min(70vw, 32rem);
+	}
+
+	.chip.status {
+		grid-column: 1 / -1;
+		justify-self: start;
+		margin-top: 0.4rem;
 	}
 
 	.chip {
@@ -282,6 +317,28 @@
 
 	.chip.back:hover {
 		color: #ffb070;
+	}
+
+	.chip.trip {
+		font-family: var(--font-display);
+		font-style: italic;
+		font-size: 0.95rem;
+		font-weight: 400;
+		letter-spacing: 0;
+		text-transform: none;
+		cursor: pointer;
+	}
+
+	.chip.trip:hover {
+		border-color: rgba(255, 176, 112, 0.6);
+		color: #ffb070;
+	}
+
+	.trip-name {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 100%;
 	}
 
 	.dot {

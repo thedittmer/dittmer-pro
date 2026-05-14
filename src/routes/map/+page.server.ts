@@ -5,17 +5,16 @@ import { ClientResponseError } from 'pocketbase';
 export const load: PageServerLoad = async ({ locals }) => {
 	const isAdmin = !!locals.pb.authStore.record?.admin;
 
-	let currentTrip: { id: string; name: string } | null = null;
+	let currentTrip: Trip | null = null;
 	let stops: Stop[] = [];
 
 	try {
-		const trip = await locals.pb
+		currentTrip = await locals.pb
 			.collection('trips')
 			.getFirstListItem<Trip>('published = true', { sort: '-created' });
-		currentTrip = { id: trip.id, name: trip.name };
 
 		const result = await locals.pb.collection('stops').getList<Stop>(1, 500, {
-			filter: `trip = "${trip.id}" && lat != null && lng != null`,
+			filter: `trip = "${currentTrip.id}" && lat != null && lng != null`,
 			sort: 'timestamp,created'
 		});
 

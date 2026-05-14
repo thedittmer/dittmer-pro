@@ -9,6 +9,18 @@
 
 	let { urls, index = $bindable(), onClose }: Props = $props();
 
+	let loaded = $state(false);
+	let errored = $state(false);
+
+	// Reset load state whenever the displayed image changes (open/prev/next).
+	$effect(() => {
+		// touch deps so this re-runs on index / url change
+		void index;
+		void urls[index];
+		loaded = false;
+		errored = false;
+	});
+
 	function prev(e?: Event) {
 		e?.stopPropagation();
 		index = (index - 1 + urls.length) % urls.length;
@@ -57,7 +69,24 @@
 	{/if}
 
 	<div class="image-wrap" onclick={(e) => e.stopPropagation()} role="presentation">
-		<img src={urls[index]} alt="" />
+		{#if !loaded && !errored}
+			<div class="spinner" aria-label="Loading"></div>
+		{/if}
+		{#if errored}
+			<p class="errmsg">Couldn't load image.</p>
+		{/if}
+		<img
+			src={urls[index]}
+			alt=""
+			class:loaded
+			onload={() => {
+				loaded = true;
+				errored = false;
+			}}
+			onerror={() => {
+				errored = true;
+			}}
+		/>
 	</div>
 </div>
 
@@ -74,11 +103,14 @@
 	}
 
 	.image-wrap {
+		position: relative;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		max-width: 100vw;
 		max-height: 100dvh;
+		min-width: 4rem;
+		min-height: 4rem;
 	}
 
 	img {
@@ -86,6 +118,43 @@
 		max-height: 100dvh;
 		object-fit: contain;
 		display: block;
+		opacity: 0;
+		transition: opacity 0.2s ease;
+	}
+	img.loaded {
+		opacity: 1;
+	}
+
+	.spinner {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 2.5rem;
+		height: 2.5rem;
+		border-radius: 50%;
+		border: 3px solid rgba(255, 255, 255, 0.18);
+		border-top-color: #ffb070;
+		animation: spin 0.85s linear infinite;
+	}
+
+	.errmsg {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		color: #fff;
+		font-family: var(--font-mono);
+		font-size: 0.85rem;
+		opacity: 0.75;
+		text-align: center;
+		white-space: nowrap;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.close,
