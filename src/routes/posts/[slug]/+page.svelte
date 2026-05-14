@@ -2,10 +2,17 @@
 	import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 	import { currentUser } from '$lib/pocketbase';
 	import { getAnimation } from '$lib/posts/animations';
+	import MarkdownPlayground from '$lib/posts/MarkdownPlayground.svelte';
 
 	let { data } = $props();
 	const post = $derived(data.post);
+	const bodyHtml = $derived(data.bodyHtml);
+	const bodyChunks = $derived(data.bodyChunks);
 	const Animation = $derived(getAnimation(post.animation_key));
+
+	const isScheduled = $derived(
+		post.publish_at && new Date(post.publish_at.replace(' ', 'T')).getTime() > Date.now()
+	);
 
 	function fileUrl(filename: string, thumbSize?: string) {
 		const q = thumbSize ? `?thumb=${thumbSize}` : '';
@@ -47,7 +54,11 @@
 	<header class="post-header">
 		<span class="text-meta">
 			{TYPE_LABEL[post.type] ?? post.type} · {fmtDate(post.created)}
-			{#if !post.published}<span class="draft"> · draft</span>{/if}
+			{#if !post.published}
+				<span class="draft"> · draft</span>
+			{:else if isScheduled}
+				<span class="scheduled"> · scheduled · {fmtDate(post.publish_at)}</span>
+			{/if}
 		</span>
 		<h1 class="post-title">{post.title}</h1>
 		{#if $currentUser?.admin}
@@ -66,9 +77,13 @@
 				</p>
 			{/if}
 		{:else if post.type === 'text' || post.type === 'poem'}
-			<div class="prose" class:poem={post.type === 'poem'}>
-				{@html post.body}
-			</div>
+			{#each bodyChunks as chunk}
+				{#if chunk.type === 'html'}
+					<div class="prose" class:poem={post.type === 'poem'}>{@html chunk.html}</div>
+				{:else if chunk.type === 'playground'}
+					<div class="playground-wrap"><MarkdownPlayground /></div>
+				{/if}
+			{/each}
 		{:else if post.type === 'gallery'}
 			{#if post.images.length === 0}
 				<p class="muted">No images in this gallery yet.</p>
@@ -81,8 +96,8 @@
 					{/each}
 				</div>
 			{/if}
-			{#if post.body}
-				<div class="prose">{@html post.body}</div>
+			{#if bodyHtml}
+				<div class="prose">{@html bodyHtml}</div>
 			{/if}
 		{:else if post.type === 'video'}
 			{#if youtubeEmbed(post.video_url)}
@@ -110,8 +125,8 @@
 			{:else}
 				<p class="muted">No video URL set.</p>
 			{/if}
-			{#if post.body}
-				<div class="prose">{@html post.body}</div>
+			{#if bodyHtml}
+				<div class="prose">{@html bodyHtml}</div>
 			{/if}
 		{/if}
 	</div>
@@ -159,9 +174,15 @@
 		border-radius: 3px;
 	}
 
-	.draft {
+	.draft,
+	.scheduled {
 		color: var(--color-accent);
 		font-weight: 600;
+	}
+
+	.playground-wrap {
+		max-width: 64rem;
+		margin: 1.5rem auto;
 	}
 
 	.post-body {

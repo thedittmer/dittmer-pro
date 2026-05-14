@@ -35,6 +35,7 @@ rsync -avz node_modules/pocketbase/ ${SERVER}:~/${REMOTE_DIR}/node_modules/pocke
 rsync -avz node_modules/fathom-client/ ${SERVER}:~/${REMOTE_DIR}/node_modules/fathom-client/
 rsync -avz node_modules/svelte-dnd-action/ ${SERVER}:~/${REMOTE_DIR}/node_modules/svelte-dnd-action/
 rsync -avz node_modules/three/ ${SERVER}:~/${REMOTE_DIR}/node_modules/three/
+rsync -avz node_modules/marked/ ${SERVER}:~/${REMOTE_DIR}/node_modules/marked/
 
 # Restart via systemd so the new build is actually picked up.
 ssh ${SERVER} "sudo systemctl restart ${PROJECT_NAME}-app"

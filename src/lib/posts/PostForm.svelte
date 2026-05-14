@@ -19,11 +19,27 @@
 	let animationKey = $state(initial?.animation_key ?? '');
 	let autoplay = $state(initial?.autoplay ?? true);
 	let videoUrl = $state(initial?.video_url ?? '');
+	let publishAt = $state(toLocalInput(initial?.publish_at));
 	let coverImageFile = $state<FileList | null>(null);
 	let imagesFiles = $state<FileList | null>(null);
 	let removeCoverImage = $state(false);
 	let busy = $state(false);
 	let errorMessage = $state('');
+
+	function toLocalInput(iso: string | undefined): string {
+		if (!iso) return '';
+		// PB stores "2026-05-01 13:00:00.000Z"; convert to local "yyyy-MM-ddTHH:mm" for datetime-local input
+		const d = new Date(iso.replace(' ', 'T'));
+		if (isNaN(d.getTime())) return '';
+		const pad = (n: number) => String(n).padStart(2, '0');
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+	}
+
+	function fromLocalInput(local: string): string {
+		if (!local) return '';
+		const d = new Date(local);
+		return isNaN(d.getTime()) ? '' : d.toISOString();
+	}
 
 	function autoSlug(t: string) {
 		return t
@@ -50,6 +66,7 @@
 		data.set('animation_key', type === 'animation' ? animationKey : '');
 		data.set('autoplay', type === 'animation' && autoplay ? 'true' : 'false');
 		data.set('video_url', type === 'video' ? videoUrl : '');
+		data.set('publish_at', fromLocalInput(publishAt));
 
 		if (coverImageFile && coverImageFile.length > 0) {
 			data.set('cover_image', coverImageFile[0]);
@@ -129,6 +146,11 @@
 		</label>
 	</div>
 
+	<label>
+		<span>Publish at <em>(blank = now; future = scheduled, hidden from public until then)</em></span>
+		<input type="datetime-local" bind:value={publishAt} />
+	</label>
+
 	{#if type === 'animation'}
 		<label>
 			<span>Animation key <em>(matches src/lib/posts/animations key)</em></span>
@@ -152,8 +174,8 @@
 
 	{#if type !== 'animation'}
 		<label>
-			<span>Body (HTML)</span>
-			<textarea bind:value={body} rows="12" class="mono"></textarea>
+			<span>Body (Markdown)</span>
+			<textarea bind:value={body} rows="16" class="mono"></textarea>
 		</label>
 	{/if}
 
@@ -207,6 +229,7 @@
 	}
 	.form input[type='text'],
 	.form input[type='url'],
+	.form input[type='datetime-local'],
 	.form select,
 	.form textarea {
 		background: var(--color-surface-2);

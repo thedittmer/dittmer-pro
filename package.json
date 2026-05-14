@@ -25,6 +25,7 @@
 	},
 	"dependencies": {
 		"fathom-client": "^3.7.2",
+		"marked": "^18.0.2",
 		"pocketbase": "^0.26.8",
 		"svelte-dnd-action": "^0.9.61",
 		"three": "^0.184.0"

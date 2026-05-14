@@ -1,8 +1,63 @@
 <script lang="ts">
 	import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
-	import { currentUser } from '$lib/pocketbase';
+	import { currentUser, pb } from '$lib/pocketbase';
+	import { invalidateAll } from '$app/navigation';
+	import { SITE_SETTINGS_ID } from '$lib/site/settings';
+	import { untrack } from 'svelte';
 
 	let { data } = $props();
+
+	let tagline = $state(untrack(() => data.tagline));
+	let editing = $state(false);
+	let draft = $state('');
+	let savingTagline = $state(false);
+	let taglineError = $state('');
+	let textareaEl: HTMLTextAreaElement | null = $state(null);
+
+	function startEdit() {
+		draft = tagline;
+		taglineError = '';
+		editing = true;
+		queueMicrotask(() => {
+			textareaEl?.focus();
+			textareaEl?.select();
+		});
+	}
+
+	function cancelEdit() {
+		editing = false;
+		draft = '';
+		taglineError = '';
+	}
+
+	async function saveTagline() {
+		const next = draft.trim();
+		if (!next || next === tagline) {
+			cancelEdit();
+			return;
+		}
+		savingTagline = true;
+		taglineError = '';
+		try {
+			await pb.collection('meta').update(SITE_SETTINGS_ID, { json: { tagline: next } });
+			tagline = next;
+			editing = false;
+			await invalidateAll();
+		} catch (err) {
+			taglineError = (err as Error).message;
+		} finally {
+			savingTagline = false;
+		}
+	}
+
+	function onEditorKey(e: KeyboardEvent) {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault();
+			saveTagline();
+		} else if (e.key === 'Escape') {
+			cancelEdit();
+		}
+	}
 
 	const TYPE_LABEL: Record<string, string> = {
 		animation: 'animation',
@@ -28,16 +83,50 @@
 
 <svelte:head>
 	<title>Jason Dittmer</title>
-	<meta
-		name="description"
-		content="I build for the web and take pictures. Neosho, Missouri."
-	/>
+	<meta name="description" content={tagline} />
 </svelte:head>
 
 <section class="stream">
 	<header class="stream-head">
 		<h1>Jason Dittmer</h1>
-		<p>I build for the web and take pictures. Neosho, Missouri.</p>
+
+		{#if editing}
+			<div class="tagline-edit">
+				<textarea
+					bind:this={textareaEl}
+					bind:value={draft}
+					onkeydown={onEditorKey}
+					rows="2"
+					maxlength="240"
+					disabled={savingTagline}
+				></textarea>
+				<div class="tagline-actions">
+					<button type="button" onclick={saveTagline} disabled={savingTagline} class="primary">
+						{savingTagline ? 'saving…' : 'save'}
+					</button>
+					<button type="button" onclick={cancelEdit} disabled={savingTagline} class="ghost">
+						cancel
+					</button>
+					<span class="hint">⏎ save · esc cancel</span>
+				</div>
+				{#if taglineError}<p class="error">{taglineError}</p>{/if}
+			</div>
+		{:else}
+			<p class="tagline">
+				{tagline}
+				{#if $currentUser?.admin}
+					<button
+						type="button"
+						class="tagline-edit-btn"
+						onclick={startEdit}
+						aria-label="Edit tagline"
+					>
+						edit
+					</button>
+				{/if}
+			</p>
+		{/if}
+
 		{#if $currentUser?.admin}
 			<a class="new-link" href="/posts/new">+ new post</a>
 		{/if}
@@ -54,7 +143,11 @@
 						<div class="post-row-body">
 							<span class="text-meta">
 								{TYPE_LABEL[post.type] ?? post.type} · {fmtDate(post.created)}
-								{#if !post.published}<span class="draft"> · draft</span>{/if}
+								{#if !post.published}
+									<span class="draft"> · draft</span>
+								{:else if post.publish_at && new Date(post.publish_at.replace(' ', 'T')).getTime() > Date.now()}
+									<span class="scheduled"> · scheduled · {fmtDate(post.publish_at)}</span>
+								{/if}
 							</span>
 							<span class="post-row-title">{post.title}</span>
 						</div>
@@ -94,11 +187,104 @@
 		letter-spacing: -0.01em;
 	}
 
-	.stream-head p {
+	.tagline {
 		color: var(--color-muted);
 		font-family: var(--font-display);
 		font-size: 1.15rem;
 		max-width: 36rem;
+		display: flex;
+		align-items: baseline;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.tagline-edit-btn {
+		background: transparent;
+		border: 0;
+		color: var(--color-faint);
+		font-family: var(--font-mono);
+		font-size: 0.66rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		cursor: pointer;
+		padding: 0.15rem 0.4rem;
+		border-radius: 2px;
+		opacity: 0;
+		transition: opacity 0.2s ease, color 0.2s ease, background 0.2s ease;
+	}
+	.tagline:hover .tagline-edit-btn,
+	.tagline-edit-btn:focus-visible {
+		opacity: 1;
+	}
+	.tagline-edit-btn:hover {
+		color: var(--color-accent);
+		background: rgba(255, 176, 112, 0.08);
+	}
+
+	.tagline-edit {
+		max-width: 36rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.tagline-edit textarea {
+		width: 100%;
+		background: var(--color-surface-2);
+		color: var(--color-text);
+		border: 1px solid var(--color-border);
+		border-radius: 3px;
+		padding: 0.75rem 0.9rem;
+		font-family: var(--font-display);
+		font-size: 1.15rem;
+		line-height: 1.4;
+		resize: vertical;
+	}
+	.tagline-edit textarea:focus {
+		outline: none;
+		border-color: var(--color-accent);
+	}
+	.tagline-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.tagline-actions .primary {
+		background: var(--color-accent);
+		color: #000;
+		border: 0;
+		padding: 0.4rem 0.9rem;
+		border-radius: 3px;
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+	.tagline-actions .primary:disabled {
+		opacity: 0.5;
+	}
+	.tagline-actions .ghost {
+		background: transparent;
+		color: var(--color-muted);
+		border: 1px solid var(--color-border);
+		padding: 0.4rem 0.9rem;
+		border-radius: 3px;
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+	.tagline-actions .hint {
+		color: var(--color-faint);
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.06em;
+	}
+	.tagline-edit .error {
+		color: #ff6b6b;
+		font-size: 0.85rem;
 	}
 
 	.new-link {
@@ -188,7 +374,8 @@
 		transition: color 0.25s ease;
 	}
 
-	.draft {
+	.draft,
+	.scheduled {
 		color: var(--color-accent);
 		font-weight: 600;
 	}

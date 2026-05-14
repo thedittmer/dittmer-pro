@@ -25,15 +25,6 @@
 <HiddenLoginTrigger />
 <LoginModal />
 
-<header class="site-header">
-	<a class="brand" href="/" data-secret-login aria-label="Home">
-		<span class="mark">JD</span>
-	</a>
-	<nav class="site-nav">
-		<a href="/">posts</a>
-	</nav>
-</header>
-
 <main class="site-main">
 	{@render children()}
 </main>
@@ -48,56 +39,6 @@
 <style>
 	:global(html, body) {
 		min-height: 100%;
-	}
-
-	.site-header {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 1.25rem 1.5rem;
-		z-index: 40;
-		mix-blend-mode: difference;
-	}
-
-	.brand {
-		display: inline-flex;
-		align-items: center;
-		text-decoration: none;
-		color: var(--color-text);
-		cursor: pointer;
-	}
-
-	.mark {
-		font-family: var(--font-display);
-		font-style: italic;
-		font-weight: 400;
-		font-size: 1.4rem;
-		letter-spacing: 0.02em;
-		line-height: 1;
-		color: #fff;
-	}
-
-	.site-nav {
-		display: flex;
-		gap: 1.25rem;
-	}
-
-	.site-nav a {
-		font-family: var(--font-mono);
-		font-size: 0.7rem;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: #fff;
-		text-decoration: none;
-		opacity: 0.85;
-	}
-
-	.site-nav a:hover {
-		opacity: 1;
 	}
 
 	.site-main {

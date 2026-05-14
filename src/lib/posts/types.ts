@@ -13,6 +13,7 @@ export interface Post extends RecordModel {
 	cover_image: string;
 	images: string[];
 	video_url: string;
+	publish_at: string;
 	author: string;
 	tags: string[];
 	created: string;
