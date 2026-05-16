@@ -4,6 +4,8 @@
 	import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 	import { currentUser, pb } from '$lib/pocketbase';
 	import Lightbox from './Lightbox.svelte';
+	import Reactions from '$lib/social/Reactions.svelte';
+	import Comments from '$lib/social/Comments.svelte';
 	import type { Stop } from './types';
 
 	type Props = {
@@ -190,6 +192,15 @@
 				</dl>
 			</section>
 		{/if}
+
+		<section class="social">
+			<Reactions targetCollection="stops" targetId={stop.id} />
+		</section>
+
+		<section class="social">
+			<h3 class="text-meta">Comments</h3>
+			<Comments targetCollection="stops" targetId={stop.id} />
+		</section>
 
 		<div class="coords text-meta">
 			{stop.lat.toFixed(5)}, {stop.lng.toFixed(5)}
@@ -433,5 +444,14 @@
 	.coords {
 		text-align: center;
 		opacity: 0.6;
+	}
+
+	.social {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.social h3 {
+		margin: 0 0 0.25rem;
 	}
 </style>

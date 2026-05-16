@@ -3,6 +3,8 @@
 	import { currentUser } from '$lib/pocketbase';
 	import { getAnimation } from '$lib/posts/animations';
 	import MarkdownPlayground from '$lib/posts/MarkdownPlayground.svelte';
+	import Reactions from '$lib/social/Reactions.svelte';
+	import Comments from '$lib/social/Comments.svelte';
 
 	let { data } = $props();
 	const post = $derived(data.post);
@@ -130,6 +132,15 @@
 			{/if}
 		{/if}
 	</div>
+
+	<section class="social-block">
+		<Reactions targetCollection="posts" targetId={post.id} />
+	</section>
+
+	<section class="social-block">
+		<h2 class="text-meta section-head">Comments</h2>
+		<Comments targetCollection="posts" targetId={post.id} />
+	</section>
 
 	<footer class="post-footer">
 		<a class="home-link" href="/">← back to all posts</a>
@@ -270,8 +281,21 @@
 		border-radius: 4px;
 	}
 
+	.social-block {
+		max-width: 38rem;
+		margin: 3rem auto 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.section-head {
+		margin: 0 0 0.5rem;
+		border-bottom: 1px solid var(--color-border);
+		padding-bottom: 0.4rem;
+	}
+
 	.post-footer {
-		margin-top: 6rem;
+		margin-top: 4rem;
 		padding-top: 2rem;
 		border-top: 1px solid var(--color-border);
 		text-align: center;

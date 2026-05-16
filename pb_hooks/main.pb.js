@@ -403,3 +403,250 @@ dittmer@hey.com`;
 		return e.json(500, { message: 'handler error: ' + String(err), stack: String(err.stack || '') });
 	}
 });
+
+// ──────────────────────────────────────────────────────────────────────
+// Social: comments + reactions on stops and posts
+// ──────────────────────────────────────────────────────────────────────
+
+// Helpers (makeToken, targetLabel, sendVerifyEmail) live in
+// pb_hooks/_social_helpers.js and are require()'d inside each handler —
+// goja doesn't share module-top symbols with route closures.
+
+// POST /api/social/comment
+// Body: { target_collection, target_id, email, name?, body, honeypot? }
+routerAdd('POST', '/api/social/comment', (e) => {
+	const SITE_BASE = 'https://www.dittmer.pro';
+	try {
+		const helpers = require(`${__hooks}/_social_helpers.js`);
+		const body = new DynamicModel({
+			target_collection: '',
+			target_id: '',
+			email: '',
+			name: '',
+			body: '',
+			honeypot: ''
+		});
+		e.bindBody(body);
+
+		// Honeypot: bots fill anything in this field; humans don't see it.
+		if (body.honeypot) {
+			return e.json(200, { ok: true });
+		}
+
+		if (!body.target_collection || !body.target_id || !body.email || !body.body) {
+			return e.json(400, { message: 'target_collection, target_id, email and body are required' });
+		}
+		if (body.target_collection !== 'stops' && body.target_collection !== 'posts') {
+			return e.json(400, { message: 'target_collection must be "stops" or "posts"' });
+		}
+
+		// If the request comes from an authenticated, already-verified user
+		// whose email matches, publish immediately. Otherwise create unverified
+		// and email a verification link.
+		const auth = e.auth;
+		const authedEmail =
+			auth && auth.collection().name === 'users' && auth.getBool('verified')
+				? auth.getString('email')
+				: '';
+		const willPublish = authedEmail && authedEmail.toLowerCase() === body.email.toLowerCase();
+
+		const coll = $app.findCollectionByNameOrId('comments');
+		const record = new Record(coll);
+		record.set('target_collection', body.target_collection);
+		record.set('target_id', body.target_id);
+		record.set('email', body.email.toLowerCase());
+		record.set('name', body.name || '');
+		record.set('body', body.body);
+		record.set('verified', willPublish);
+		const token = willPublish ? '' : helpers.makeToken();
+		record.set('verify_token', token);
+		$app.save(record);
+
+		if (!willPublish) {
+			const label = helpers.targetLabel(body.target_collection, body.target_id);
+			const verifyUrl = SITE_BASE + '/v/' + token;
+			try {
+				helpers.sendVerifyEmail(body.email, body.name, 'comment', body.body, label, verifyUrl);
+			} catch (err) {
+				// Don't expose the record if we couldn't email — roll back.
+				try { $app.delete(record); } catch (_) {}
+				return e.json(500, { message: 'could not send verification email: ' + err });
+			}
+		}
+
+		return e.json(200, {
+			id: record.id,
+			verified: willPublish,
+			needs_verification: !willPublish
+		});
+	} catch (err) {
+		return e.json(500, { message: 'handler error: ' + String(err) });
+	}
+});
+
+// POST /api/social/react
+// Body: { target_collection, target_id, type, email, name?, honeypot? }
+// Idempotent on (target_collection, target_id, email, type).
+routerAdd('POST', '/api/social/react', (e) => {
+	const SITE_BASE = 'https://www.dittmer.pro';
+	try {
+		const helpers = require(`${__hooks}/_social_helpers.js`);
+		const body = new DynamicModel({
+			target_collection: '',
+			target_id: '',
+			type: '',
+			email: '',
+			name: '',
+			honeypot: ''
+		});
+		e.bindBody(body);
+
+		if (body.honeypot) return e.json(200, { ok: true });
+
+		if (!body.target_collection || !body.target_id || !body.email || !body.type) {
+			return e.json(400, { message: 'target_collection, target_id, type and email are required' });
+		}
+		if (body.target_collection !== 'stops' && body.target_collection !== 'posts') {
+			return e.json(400, { message: 'target_collection must be "stops" or "posts"' });
+		}
+
+		const auth = e.auth;
+		const authedEmail =
+			auth && auth.collection().name === 'users' && auth.getBool('verified')
+				? auth.getString('email')
+				: '';
+		const willPublish = authedEmail && authedEmail.toLowerCase() === body.email.toLowerCase();
+
+		const coll = $app.findCollectionByNameOrId('reactions');
+		let record;
+		let isNew = false;
+		try {
+			record = $app.findFirstRecordByFilter(
+				'reactions',
+				'target_collection = {:tc} && target_id = {:tid} && email = {:em} && type = {:tp}',
+				{ tc: body.target_collection, tid: body.target_id, em: body.email.toLowerCase(), tp: body.type }
+			);
+		} catch (_) {
+			record = new Record(coll);
+			isNew = true;
+		}
+
+		record.set('target_collection', body.target_collection);
+		record.set('target_id', body.target_id);
+		record.set('email', body.email.toLowerCase());
+		record.set('name', body.name || record.getString('name') || '');
+		record.set('type', body.type);
+		// Only upgrade verified status, never downgrade
+		const alreadyVerified = record.getBool('verified');
+		const verifiedNow = alreadyVerified || willPublish;
+		record.set('verified', verifiedNow);
+		const token = verifiedNow ? '' : record.getString('verify_token') || helpers.makeToken();
+		record.set('verify_token', token);
+		$app.save(record);
+
+		if (!verifiedNow) {
+			const label = helpers.targetLabel(body.target_collection, body.target_id);
+			const verifyUrl = SITE_BASE + '/v/' + token;
+			try {
+				helpers.sendVerifyEmail(body.email, body.name, 'reaction', body.type, label, verifyUrl);
+			} catch (err) {
+				if (isNew) {
+					try { $app.delete(record); } catch (_) {}
+				}
+				return e.json(500, { message: 'could not send verification email: ' + err });
+			}
+		}
+
+		return e.json(200, {
+			id: record.id,
+			verified: verifiedNow,
+			needs_verification: !verifiedNow
+		});
+	} catch (err) {
+		return e.json(500, { message: 'handler error: ' + String(err) });
+	}
+});
+
+// GET /api/social/verify/{token}
+// Public. Flips verified=true on whatever record carries the token.
+// Auto-creates a users record if no account exists for that email.
+routerAdd('GET', '/api/social/verify/{token}', (e) => {
+	try {
+		const helpers = require(`${__hooks}/_social_helpers.js`);
+		const token = e.request.pathValue('token');
+		if (!token || token.length < 10) {
+			return e.json(400, { message: 'bad token' });
+		}
+
+		// Find which collection holds it
+		let record = null;
+		let kind = '';
+		try {
+			record = $app.findFirstRecordByFilter('comments', 'verify_token = {:t}', { t: token });
+			kind = 'comment';
+		} catch (_) {}
+		if (!record) {
+			try {
+				record = $app.findFirstRecordByFilter('reactions', 'verify_token = {:t}', { t: token });
+				kind = 'reaction';
+			} catch (_) {}
+		}
+		if (!record) {
+			return e.json(404, { message: 'token not found or already used' });
+		}
+
+		const email = record.getString('email').toLowerCase();
+		const name = record.getString('name');
+
+		record.set('verified', true);
+		record.set('verify_token', '');
+		$app.save(record);
+
+		// Auto-create a users record if none exists yet
+		let userCreated = false;
+		try {
+			$app.findFirstRecordByFilter('users', 'email = {:e}', { e: email });
+		} catch (_) {
+			try {
+				const users = $app.findCollectionByNameOrId('users');
+				const u = new Record(users);
+				u.setEmail(email);
+				u.set('name', name || '');
+				// Build a unique-ish username from the email local-part
+				const local = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') || 'user';
+				let username = local.slice(0, 14);
+				let suffix = 0;
+				while (true) {
+					const tryName = suffix ? username + suffix : username;
+					try {
+						$app.findFirstRecordByFilter('users', 'username = {:u}', { u: tryName });
+						suffix = suffix ? suffix + 1 : 2;
+					} catch (_) {
+						username = tryName;
+						break;
+					}
+					if (suffix > 9999) break;
+				}
+				u.set('username', username);
+				u.set('verified', true);
+				u.set('emailVisibility', false);
+				// random password — they'll use OTP anyway
+				u.setPassword(helpers.makeToken() + 'A!1');
+				$app.save(u);
+				userCreated = true;
+			} catch (err) {
+				// non-fatal — verification still succeeds
+			}
+		}
+
+		return e.json(200, {
+			kind: kind,
+			target_collection: record.getString('target_collection'),
+			target_id: record.getString('target_id'),
+			email: email,
+			account_created: userCreated
+		});
+	} catch (err) {
+		return e.json(500, { message: 'handler error: ' + String(err) });
+	}
+});
