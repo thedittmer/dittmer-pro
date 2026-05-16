@@ -122,6 +122,18 @@
 			map.on('load', () => {
 				if (cancelled) return;
 				mapLoaded = true;
+
+				// Public viewer with stops: fit the camera to all of them so the
+				// whole trip is visible at a glance instead of only the latest pin.
+				if (!data.isAdmin && data.stops.length > 0) {
+					const bounds = new mapboxgl.LngLatBounds();
+					for (const s of data.stops) bounds.extend([s.lng, s.lat]);
+					map.fitBounds(bounds, {
+						padding: { top: 96, bottom: 80, left: 60, right: 60 },
+						duration: 0,
+						maxZoom: 11
+					});
+				}
 			});
 
 			if (data.isAdmin) {
