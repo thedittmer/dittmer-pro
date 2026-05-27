@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
+	import { onMount, onDestroy } from 'svelte';
 
 	type Props = {
 		urls: string[];
 		index: number;
+		labels?: string[];
 		onClose: () => void;
 	};
 
-	let { urls, index = $bindable(), onClose }: Props = $props();
+	let { urls, index = $bindable(), labels, onClose }: Props = $props();
 
 	let loaded = $state(false);
 	let errored = $state(false);
@@ -37,6 +39,13 @@
 		else if (e.key === 'ArrowRight') next();
 	}
 
+	onMount(() => {
+		document.body.style.overflow = 'hidden';
+	});
+	onDestroy(() => {
+		document.body.style.overflow = '';
+	});
+
 	let touchStartX = 0;
 	function onTouchStart(e: TouchEvent) {
 		touchStartX = e.changedTouches[0].screenX;
@@ -60,12 +69,27 @@
 	ontouchend={onTouchEnd}
 	role="presentation"
 >
+	<a
+		href={urls[index]}
+		download
+		class="download"
+		onclick={(e) => e.stopPropagation()}
+		aria-label="Download photo"
+	>
+		<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+	</a>
 	<button type="button" class="close" onclick={(e) => { e.stopPropagation(); onClose(); }} aria-label="Close">×</button>
 
 	{#if urls.length > 1}
 		<button type="button" class="nav prev" onclick={prev} aria-label="Previous">‹</button>
 		<button type="button" class="nav next" onclick={next} aria-label="Next">›</button>
-		<div class="counter">{index + 1} / {urls.length}</div>
+	{/if}
+
+	{#if labels?.[index] || urls.length > 1}
+		<div class="counter">
+			{#if labels?.[index]}<span class="label">{labels[index]}</span>{/if}
+			{#if urls.length > 1}<span class="count">{index + 1} / {urls.length}</span>{/if}
+		</div>
 	{/if}
 
 	<div class="image-wrap" onclick={(e) => e.stopPropagation()} role="presentation">
@@ -99,7 +123,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 0;
+		padding: 3.5rem 0;
+		overflow: hidden;
 	}
 
 	.image-wrap {
@@ -108,14 +133,14 @@
 		align-items: center;
 		justify-content: center;
 		max-width: 100vw;
-		max-height: 100dvh;
+		max-height: 100%;
 		min-width: 4rem;
 		min-height: 4rem;
 	}
 
 	img {
 		max-width: 100vw;
-		max-height: 100dvh;
+		max-height: calc(100dvh - 7rem);
 		object-fit: contain;
 		display: block;
 		opacity: 0;
@@ -175,8 +200,27 @@
 		font-family: inherit;
 	}
 	.close:hover,
-	.nav:hover {
+	.nav:hover,
+	.download:hover {
 		background: rgba(0, 0, 0, 0.8);
+	}
+
+	.download {
+		position: absolute;
+		top: max(1rem, env(safe-area-inset-top));
+		right: calc(max(1rem, env(safe-area-inset-right)) + 3.5rem);
+		width: 2.5rem;
+		height: 2.5rem;
+		background: rgba(0, 0, 0, 0.55);
+		color: #fff;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: 50%;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		backdrop-filter: blur(6px);
+		-webkit-backdrop-filter: blur(6px);
+		text-decoration: none;
 	}
 
 	.close {
@@ -215,5 +259,23 @@
 		border-radius: 999px;
 		backdrop-filter: blur(6px);
 		-webkit-backdrop-filter: blur(6px);
+		display: inline-flex;
+		gap: 0.6rem;
+		align-items: center;
+		max-width: calc(100vw - 2rem);
+	}
+
+	.counter .label {
+		text-transform: none;
+		letter-spacing: 0.04em;
+		font-size: 0.8rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.counter .count {
+		opacity: 0.7;
+		flex-shrink: 0;
 	}
 </style>

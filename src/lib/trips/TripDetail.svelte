@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+	import Lightbox from './Lightbox.svelte';
+	import LazyImg from './LazyImg.svelte';
 	import type { Trip, Stop } from './types';
 
 	type Props = {
@@ -10,6 +12,8 @@
 	};
 
 	let { trip, stops, onClose }: Props = $props();
+
+	let lightbox = $state<{ index: number } | null>(null);
 
 	function handleKey(e: KeyboardEvent) {
 		if (e.key === 'Escape') onClose();
@@ -77,9 +81,48 @@
 
 	const featuredUrl = $derived(
 		trip.featured_image
-			? `${PUBLIC_POCKETBASE_URL}/api/files/${trip.collectionId}/${trip.id}/${trip.featured_image}?thumb=1200x900`
+			? `${PUBLIC_POCKETBASE_URL}/api/files/${trip.collectionId}/${trip.id}/${trip.featured_image}?thumb=1200x900f`
 			: null
 	);
+
+	// -- photo gallery ----------------------------------------------------
+	function photoUrl(stop: Stop, filename: string, thumb: string) {
+		return `${PUBLIC_POCKETBASE_URL}/api/files/${stop.collectionId}/${stop.id}/${filename}?thumb=${thumb}`;
+	}
+
+	const photoStops = $derived(stops.filter((s) => s.photos && s.photos.length > 0));
+
+	const galleryGroups = $derived.by(() => {
+		const groups: { stop: Stop; items: { thumb: string; full: string; startIndex: number }[] }[] = [];
+		let i = 0;
+		for (const stop of photoStops) {
+			const items = stop.photos.map((p) => ({
+				thumb: photoUrl(stop, p, '200x200f'),
+				full: photoUrl(stop, p, '1200x1200f'),
+				startIndex: i++
+			}));
+			groups.push({ stop, items });
+		}
+		return groups;
+	});
+
+	const allFullUrls = $derived(galleryGroups.flatMap((g) => g.items.map((it) => it.full)));
+	const allLabels = $derived(galleryGroups.flatMap((g) => g.items.map(() => g.stop.name || '')));
+
+	// -- video gallery ----------------------------------------------------
+	function videoUrl(stop: Stop, filename: string) {
+		return `${PUBLIC_POCKETBASE_URL}/api/files/${stop.collectionId}/${stop.id}/${filename}`;
+	}
+
+	const videoStops = $derived(stops.filter((s) => s.videos && s.videos.length > 0));
+
+	const videoGroups = $derived.by(() => {
+		const groups: { stop: Stop; items: string[] }[] = [];
+		for (const stop of videoStops) {
+			groups.push({ stop, items: stop.videos.map((v) => videoUrl(stop, v)) });
+		}
+		return groups;
+	});
 </script>
 
 <svelte:window onkeydown={handleKey} />
@@ -175,8 +218,60 @@
 				</div>
 			{/if}
 		</dl>
+
+		{#if galleryGroups.length > 0}
+			<section class="gallery">
+				<h3 class="gallery-title">Photos</h3>
+				{#each galleryGroups as group (group.stop.id)}
+					<div class="gallery-group">
+						<p class="gallery-stop">{group.stop.name || 'Untitled stop'}</p>
+						<div class="gallery-grid">
+							{#each group.items as item (item.full)}
+								<button
+									type="button"
+									class="thumb"
+									onclick={() => (lightbox = { index: item.startIndex })}
+									aria-label={`Open photo from ${group.stop.name || 'stop'}`}
+								>
+									<LazyImg src={item.thumb} />
+								</button>
+							{/each}
+						</div>
+					</div>
+				{/each}
+			</section>
+		{/if}
+
+		{#if videoGroups.length > 0}
+			<section class="gallery">
+				<h3 class="gallery-title">Videos</h3>
+				{#each videoGroups as group (group.stop.id)}
+					<div class="gallery-group">
+						<p class="gallery-stop">{group.stop.name || 'Untitled stop'}</p>
+						{#each group.items as url}
+							<video
+								src={url}
+								controls
+								playsinline
+								preload="metadata"
+								class="trip-video"
+							></video>
+						{/each}
+					</div>
+				{/each}
+			</section>
+		{/if}
 	</div>
 </div>
+
+{#if lightbox}
+	<Lightbox
+		urls={allFullUrls}
+		labels={allLabels}
+		bind:index={lightbox.index}
+		onClose={() => (lightbox = null)}
+	/>
+{/if}
 
 <style>
 	.backdrop {
@@ -355,5 +450,66 @@
 		font-size: 0.85rem;
 		color: var(--color-muted);
 		font-style: italic;
+	}
+
+	.gallery {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.gallery-title {
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--color-muted);
+		margin: 0;
+	}
+
+	.gallery-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.gallery-stop {
+		font-family: var(--font-display);
+		font-style: italic;
+		font-size: 0.95rem;
+		color: var(--color-text);
+		margin: 0;
+	}
+
+	.gallery-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+		gap: 0.35rem;
+	}
+
+	.thumb {
+		all: unset;
+		display: block;
+		overflow: hidden;
+		border-radius: 4px;
+		background: var(--color-surface-2);
+		cursor: pointer;
+		position: relative;
+	}
+
+	.thumb:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+
+	.trip-video {
+		width: 100%;
+		border-radius: 4px;
+		background: #000;
+	}
+
+	.thumb:hover {
+		transform: scale(1.03);
+		transition: transform 0.2s ease;
 	}
 </style>

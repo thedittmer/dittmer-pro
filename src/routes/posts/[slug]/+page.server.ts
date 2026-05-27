@@ -11,7 +11,8 @@ marked.use({
 		link(token) {
 			const text = this.parser.parseInline(token.tokens ?? []);
 			const isExternal = /^https?:\/\//.test(token.href);
-			const attrs = isExternal ? ' target="_blank" rel="noopener"' : '';
+			const isInternal = token.href.startsWith('/');
+			const attrs = isExternal || isInternal ? ' target="_blank" rel="noopener"' : '';
 			const titleAttr = token.title ? ` title="${token.title}"` : '';
 			return `<a href="${token.href}"${titleAttr}${attrs}>${text}</a>`;
 		}

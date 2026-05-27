@@ -115,7 +115,7 @@
 	}
 </script>
 
-<form onsubmit={handleSubmit} class="form">
+<form onsubmit={handleSubmit} novalidate class="form">
 	{#if errorMessage}
 		<div class="error">{errorMessage}</div>
 	{/if}
@@ -148,7 +148,7 @@
 
 	<label>
 		<span>Publish at <em>(blank = now; future = scheduled, hidden from public until then)</em></span>
-		<input type="datetime-local" bind:value={publishAt} />
+		<input type="datetime-local" step="any" bind:value={publishAt} />
 	</label>
 
 	{#if type === 'animation'}

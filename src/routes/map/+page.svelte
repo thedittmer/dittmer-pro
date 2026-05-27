@@ -7,23 +7,38 @@
 	import StopForm from '$lib/trips/StopForm.svelte';
 	import StopDetail from '$lib/trips/StopDetail.svelte';
 	import TripDetail from '$lib/trips/TripDetail.svelte';
+	import SearchPanel from '$lib/trips/SearchPanel.svelte';
 	import type { Stop } from '$lib/trips/types';
+	import type { StopType } from '$lib/trips/types';
 
 	let { data } = $props();
 
 	let stopFormOpen = $state(false);
-	let selectedStop = $state<Stop | null>(null);
+	let editingStop = $state<Stop | null>(null);
+	let selectedIndex = $state<number | null>(null);
 	let tripDetailOpen = $state(false);
+	let searchOpen = $state(false);
+	let searchQuery = $state('');
+	let activeTypes = $state(new Set<StopType>());
+	let showFavorites = $state(false);
 	let lastKnownLocation = $state<{ lat: number; lng: number } | null>(null);
 	let stopMarkers: any[] = [];
 	let mapLoaded = $state(false);
 
 	function openAddStop() {
+		editingStop = null;
 		stopFormOpen = true;
 	}
 
-	function closeAddStop() {
+	function closeStopForm() {
 		stopFormOpen = false;
+		editingStop = null;
+	}
+
+	function startEdit(stop: Stop) {
+		selectedIndex = null; // close the detail sheet first
+		editingStop = stop;
+		stopFormOpen = true;
 	}
 
 	async function handleStopSaved(stop: Stop) {
@@ -34,25 +49,70 @@
 		}
 	}
 
-	// Reactive marker rendering: re-runs whenever data.stops or mapLoaded changes.
+	async function handleStopDeleted(_id: string) {
+		await invalidateAll();
+	}
+
+	function getBookmarks(): Set<string> {
+		try {
+			return new Set(JSON.parse(localStorage.getItem('bookmarked-stops') || '[]'));
+		} catch { return new Set(); }
+	}
+
+	function toggleType(t: StopType) {
+		const next = new Set(activeTypes);
+		if (next.has(t)) next.delete(t);
+		else next.add(t);
+		activeTypes = next;
+	}
+
+	const hasFilters = $derived(searchQuery.length > 0 || activeTypes.size > 0 || showFavorites);
+
+	function matchesFilters(s: Stop, q: string, bookmarks: Set<string> | null): boolean {
+		if (activeTypes.size > 0 && !activeTypes.has(s.type)) return false;
+		if (bookmarks && !bookmarks.has(s.id)) return false;
+		if (q) {
+			const haystack = [s.name, s.address, s.notes, s.type].filter(Boolean).join(' ').toLowerCase();
+			if (!haystack.includes(q)) return false;
+		}
+		return true;
+	}
+
+	// Reactive marker rendering: re-runs whenever data.stops, filters, or mapLoaded changes.
 	$effect(() => {
 		const list = data.stops;
+		const q = searchQuery.toLowerCase().trim();
+		const _types = activeTypes; // touch for reactivity
+		const _favs = showFavorites;
 		if (!mapLoaded || !map || !mapboxgl) return;
 		for (const m of stopMarkers) m.remove();
 		stopMarkers = [];
-		for (const s of list) {
+		const bookmarks = getBookmarks();
+		const favFilter = _favs ? bookmarks : null;
+		for (let i = 0; i < list.length; i++) {
+			const s = list[i];
+			if (hasFilters && !matchesFilters(s, q, favFilter)) continue;
 			const el = document.createElement('div');
-			el.className = `stop-marker stop-${s.type}`;
+			el.className = `stop-marker stop-${s.type}${bookmarks.has(s.id) ? ' bookmarked' : ''}`;
+			el.textContent = String(i + 1);
 			el.title = `${s.type}${s.name ? ' · ' + s.name : ''}`;
+			const origIndex = i;
 			el.addEventListener('click', (e) => {
 				e.stopPropagation();
-				selectedStop = s;
+				selectedIndex = origIndex;
 			});
 			const marker = new mapboxgl.Marker({ element: el })
 				.setLngLat([s.lng, s.lat])
 				.addTo(map);
 			stopMarkers.push(marker);
 		}
+	});
+
+	// Pan map to the selected stop when navigating.
+	$effect(() => {
+		if (selectedIndex === null || !map || !mapLoaded) return;
+		const s = data.stops[selectedIndex];
+		if (s) map.easeTo({ center: [s.lng, s.lat], duration: 600 });
 	});
 
 	// Centered on Neosho, MO as final fallback.
@@ -65,13 +125,33 @@
 	type LocationStatus = 'pending' | 'granted' | 'denied' | 'last-stop' | 'idle';
 	let locationStatus = $state<LocationStatus>('pending');
 
-	const styleFor = (t: 'light' | 'dark') =>
-		t === 'dark' ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/light-v11';
+	const styleFor = (t: string) =>
+		t === 'satellite'
+			? 'mapbox://styles/mapbox/satellite-streets-v12'
+			: t === 'dark'
+				? 'mapbox://styles/mapbox/dark-v11'
+				: 'mapbox://styles/mapbox/light-v11';
 
-	// Swap basemap when theme flips.
+	// Swap basemap when theme changes.
 	$effect(() => {
 		const t = $theme;
 		if (map) map.setStyle(styleFor(t));
+	});
+
+	// Compute miles driven for the latest gas stop by comparing to the previous one.
+	const lastStopGasStats = $derived.by(() => {
+		const ls = data.lastStop;
+		if (!ls || ls.type !== 'gas' || !ls.odometer) return null;
+		// Find previous gas stop with odometer
+		const gasStops = data.stops.filter(
+			(s) => s.type === 'gas' && s.odometer && s.odometer > 0 && s.id !== ls.id
+		);
+		if (gasStops.length === 0) return null;
+		const prev = gasStops[gasStops.length - 1];
+		const miles = ls.odometer - prev.odometer;
+		if (miles <= 0) return null;
+		const mpg = ls.gallons ? miles / ls.gallons : null;
+		return { miles, mpg };
 	});
 
 	const TYPE_LABEL: Record<string, string> = {
@@ -123,6 +203,14 @@
 				if (cancelled) return;
 				mapLoaded = true;
 
+				// Open a specific stop if the URL hash is #stop-{id}.
+				const hash = window.location.hash;
+				if (hash.startsWith('#stop-')) {
+					const stopId = hash.slice(6);
+					const idx = data.stops.findIndex((s) => s.id === stopId);
+					if (idx >= 0) selectedIndex = idx;
+				}
+
 				// Public viewer with stops: fit the camera to all of them so the
 				// whole trip is visible at a glance instead of only the latest pin.
 				if (!data.isAdmin && data.stops.length > 0) {
@@ -140,7 +228,7 @@
 				// Admin: live geolocation pulse, in addition to the stop pins
 				// rendered by the $effect on data.stops.
 				if (!navigator.geolocation) {
-					locationStatus = 'denied';
+					locationStatus = data.lastStop ? 'last-stop' : 'denied';
 				} else {
 					navigator.geolocation.getCurrentPosition(
 						(pos) => {
@@ -156,7 +244,7 @@
 							map.easeTo({ center: [here.lng, here.lat], zoom: 13, duration: 1200 });
 						},
 						() => {
-							locationStatus = 'denied';
+							locationStatus = data.lastStop ? 'last-stop' : 'denied';
 						},
 						{ timeout: 8000 }
 					);
@@ -178,13 +266,16 @@
 <svelte:head>
 	<title>Map — Jason Dittmer</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+	{@html '<style>html,body{overflow:hidden;height:100dvh}</style>'}
 </svelte:head>
 
 <main class="map">
 	<div bind:this={mapContainer} class="canvas"></div>
 
-	<div class="top-bar">
-		<a href="/" class="chip back" aria-label="Back to posts">←</a>
+	<div class="top-bar" onwheel={(e) => e.preventDefault()}>
+		<button type="button" class="chip back" onclick={() => (searchOpen = !searchOpen)} aria-label="Search stops">
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+		</button>
 
 		{#if data.currentTrip}
 			<button type="button" class="chip trip" onclick={() => (tripDetailOpen = true)}>
@@ -192,7 +283,11 @@
 			</button>
 		{/if}
 
-		<div class="chip status">
+		<button
+			type="button"
+			class="chip status"
+			onclick={() => { if (data.stops.length > 0) selectedIndex = data.stops.length - 1; }}
+		>
 			{#if locationStatus === 'pending'}
 				<span class="dot pulse"></span>
 				<span>Locating…</span>
@@ -201,10 +296,21 @@
 				<span>You are here</span>
 			{:else if locationStatus === 'last-stop' && data.lastStop}
 				<span class="dot ok"></span>
-				<span>
-					{TYPE_LABEL[data.lastStop.type] ?? data.lastStop.type}
-					{#if data.lastStop.name}· {data.lastStop.name}{/if}
-					· {timeAgo(data.lastStop.timestamp)}
+				<span class="status-lines">
+					<span class="status-top">
+						{TYPE_LABEL[data.lastStop.type] ?? data.lastStop.type}
+						{#if data.lastStop.name}· {data.lastStop.name}{/if}
+						· {timeAgo(data.lastStop.timestamp)}
+					</span>
+					{#if data.lastStop.type === 'gas'}
+						<span class="status-gas">
+							{#if data.lastStop.price_per_gallon}${data.lastStop.price_per_gallon.toFixed(3)}/gal{/if}
+							{#if data.lastStop.gallons}· {data.lastStop.gallons.toFixed(1)} gal{/if}
+							{#if data.lastStop.total_cost}· ${data.lastStop.total_cost.toFixed(2)}{/if}
+							{#if lastStopGasStats}· {lastStopGasStats.miles.toLocaleString()} mi{/if}
+							{#if lastStopGasStats?.mpg}· {lastStopGasStats.mpg.toFixed(1)} mpg{/if}
+						</span>
+					{/if}
 				</span>
 			{:else if locationStatus === 'denied'}
 				<span class="dot warn"></span>
@@ -213,7 +319,7 @@
 				<span class="dot warn"></span>
 				<span>Neosho, MO</span>
 			{/if}
-		</div>
+		</button>
 	</div>
 
 	{#if $currentUser?.admin && data.currentTrip}
@@ -225,14 +331,21 @@
 	<StopForm
 		open={stopFormOpen}
 		tripId={data.currentTrip.id}
+		stop={editingStop}
 		seedCoords={lastKnownLocation}
-		onClose={closeAddStop}
+		onClose={closeStopForm}
 		onSaved={handleStopSaved}
+		onDeleted={handleStopDeleted}
 	/>
 {/if}
 
-{#if selectedStop}
-	<StopDetail stop={selectedStop} onClose={() => (selectedStop = null)} />
+{#if selectedIndex !== null && data.stops[selectedIndex]}
+	<StopDetail
+		stops={data.stops}
+		bind:index={selectedIndex}
+		onClose={() => (selectedIndex = null)}
+		onEdit={startEdit}
+	/>
 {/if}
 
 {#if tripDetailOpen && data.currentTrip}
@@ -242,6 +355,19 @@
 		onClose={() => (tripDetailOpen = false)}
 	/>
 {/if}
+
+<SearchPanel
+	stops={data.stops}
+	open={searchOpen}
+	query={searchQuery}
+	{activeTypes}
+	{showFavorites}
+	onClose={() => (searchOpen = false)}
+	onSelect={(i) => { selectedIndex = i; searchOpen = false; }}
+	onQueryChange={(q) => (searchQuery = q)}
+	onToggleType={toggleType}
+	onToggleFavorites={() => (showFavorites = !showFavorites)}
+/>
 
 <style>
 	.map {
@@ -312,6 +438,30 @@
 
 	.chip.status {
 		min-width: 0;
+		cursor: pointer;
+	}
+	.chip.status:hover {
+		border-color: rgba(255, 176, 112, 0.6);
+		color: #ffb070;
+	}
+
+	.status-lines {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		overflow: hidden;
+	}
+	.status-top {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.status-gas {
+		opacity: 0.7;
+		font-size: 0.65rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.chip.status span:last-child {
@@ -395,13 +545,22 @@
 
 	/* Stop pins — solid amber/colored by type, no animation */
 	:global(.stop-marker) {
-		width: 22px;
-		height: 22px;
+		width: 24px;
+		height: 24px;
 		border-radius: 50%;
 		background: #ffb070;
-		border: 3px solid #fff;
+		border: 2px solid #fff;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
 		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 11px;
+		font-weight: 700;
+		color: #fff;
+		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+		line-height: 1;
+		font-family: var(--font-mono, monospace);
 	}
 	:global(.stop-gas) {
 		background: #ffb070;
@@ -420,6 +579,9 @@
 	}
 	:global(.stop-other) {
 		background: #c9a3e0;
+	}
+	:global(.stop-marker.bookmarked) {
+		box-shadow: 0 0 0 3px rgba(255, 176, 112, 0.6), 0 4px 12px rgba(0, 0, 0, 0.55);
 	}
 
 	@keyframes ping {

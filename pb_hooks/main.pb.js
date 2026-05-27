@@ -602,10 +602,17 @@ routerAdd('GET', '/api/social/verify/{token}', (e) => {
 		record.set('verify_token', '');
 		$app.save(record);
 
-		// Auto-create a users record if none exists yet
+		// Find or create the users record. If the user is new, populate the
+		// name they typed; if they already exist and their name was blank,
+		// backfill it from this submission (but never overwrite a non-empty
+		// existing name).
 		let userCreated = false;
 		try {
-			$app.findFirstRecordByFilter('users', 'email = {:e}', { e: email });
+			const existing = $app.findFirstRecordByFilter('users', 'email = {:e}', { e: email });
+			if (name && !existing.getString('name')) {
+				existing.set('name', name);
+				$app.save(existing);
+			}
 		} catch (_) {
 			try {
 				const users = $app.findCollectionByNameOrId('users');

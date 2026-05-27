@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import { onDestroy } from 'svelte';
+	import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 	import { pb } from '$lib/pocketbase';
 	import { ClientResponseError } from 'pocketbase';
 	import { STOP_TYPES, type StopType, type Stop } from './types';
@@ -8,12 +9,16 @@
 	type Props = {
 		open: boolean;
 		tripId: string;
+		stop?: Stop | null; // when provided → edit mode
 		seedCoords?: { lat: number; lng: number } | null;
 		onClose: () => void;
 		onSaved: (stop: Stop) => void;
+		onDeleted?: (id: string) => void;
 	};
 
-	let { open, tripId, seedCoords = null, onClose, onSaved }: Props = $props();
+	let { open, tripId, stop = null, seedCoords = null, onClose, onSaved, onDeleted }: Props = $props();
+
+	const isEdit = $derived(!!stop);
 
 	let type = $state<StopType>('gas');
 	let name = $state('');
@@ -37,11 +42,25 @@
 	// because we want to accumulate across multiple camera shots.
 	let photos = $state<File[]>([]);
 	let photoUrls = $state<string[]>([]);
+	let videos = $state<File[]>([]);
+	let videoUrls = $state<string[]>([]);
 	let receipts = $state<File[]>([]);
 	let receiptUrls = $state<string[]>([]);
 
+	// Existing files (only populated in edit mode). Filenames stay in
+	// `existing*`; if user removes one we move it into the `removed*` set
+	// and on submit we ship `photos-: <filename>` to PB to drop it.
+	let existingPhotos = $state<string[]>([]);
+	let existingVideos = $state<string[]>([]);
+	let existingReceipts = $state<string[]>([]);
+	let removedPhotos = $state(new Set<string>());
+	let removedVideos = $state(new Set<string>());
+	let removedReceipts = $state(new Set<string>());
+	let fileToken = $state(''); // for receipt thumb URLs
+
 	let photoCameraInput: HTMLInputElement | undefined = $state();
 	let photoLibraryInput: HTMLInputElement | undefined = $state();
+	let videoInput: HTMLInputElement | undefined = $state();
 	let receiptCameraInput: HTMLInputElement | undefined = $state();
 	let receiptLibraryInput: HTMLInputElement | undefined = $state();
 
@@ -55,18 +74,31 @@
 			: null
 	);
 
-	// Re-seed and re-locate every time the modal opens.
+	// Re-seed every time the modal opens. In create mode we ask for fresh
+	// GPS; in edit mode we hydrate from the existing record.
 	let lastOpen = false;
 	$effect(() => {
 		if (open && !lastOpen) {
-			reset();
-			if (seedCoords) {
-				lat = seedCoords.lat;
-				lng = seedCoords.lng;
+			if (stop) {
+				hydrateFromStop(stop);
+			} else {
+				reset();
+				if (seedCoords) {
+					lat = seedCoords.lat;
+					lng = seedCoords.lng;
+				}
+				refreshLocation();
 			}
-			refreshLocation();
 		}
 		lastOpen = open;
+	});
+
+	// Mint a file token when editing a stop with receipts so we can render
+	// the protected thumbnails.
+	$effect(() => {
+		if (open && stop && stop.receipts?.length > 0 && !fileToken) {
+			pb.files.getToken().then((t) => (fileToken = t)).catch(() => {});
+		}
 	});
 
 	function reset() {
@@ -86,9 +118,120 @@
 		heading = null;
 		speed = null;
 		clearFiles(photos, photoUrls);
+		clearFiles(videos, videoUrls);
 		clearFiles(receipts, receiptUrls);
+		existingPhotos = [];
+		existingVideos = [];
+		existingReceipts = [];
+		removedPhotos = new Set();
+		removedVideos = new Set();
+		removedReceipts = new Set();
 		errorMessage = '';
 		busy = false;
+	}
+
+	function hydrateFromStop(s: Stop) {
+		reset();
+		type = s.type;
+		name = s.name || '';
+		lat = typeof s.lat === 'number' ? s.lat : '';
+		lng = typeof s.lng === 'number' ? s.lng : '';
+		accuracy = typeof s.accuracy === 'number' && s.accuracy ? s.accuracy : null;
+		altitude = typeof s.altitude === 'number' && s.altitude ? s.altitude : null;
+		altitudeAccuracy =
+			typeof s.altitude_accuracy === 'number' && s.altitude_accuracy ? s.altitude_accuracy : null;
+		heading = typeof s.heading === 'number' && s.heading ? s.heading : null;
+		speed = typeof s.speed === 'number' && s.speed ? s.speed : null;
+		address = s.address || '';
+		if (s.timestamp) {
+			const d = new Date(s.timestamp.replace(' ', 'T'));
+			if (!isNaN(d.getTime())) timestamp = toLocalInput(d);
+		}
+		notes = s.notes || '';
+		odometer = typeof s.odometer === 'number' && s.odometer ? s.odometer : '';
+		gallons = typeof s.gallons === 'number' && s.gallons ? s.gallons : '';
+		pricePerGallon =
+			typeof s.price_per_gallon === 'number' && s.price_per_gallon ? s.price_per_gallon : '';
+		existingPhotos = [...(s.photos || [])];
+		existingVideos = [...(s.videos || [])];
+		existingReceipts = [...(s.receipts || [])];
+	}
+
+	function existingFileUrl(filename: string, thumb: string, withToken: boolean) {
+		if (!stop) return '';
+		const params: string[] = [];
+		if (thumb) params.push(`thumb=${thumb}`);
+		if (withToken && fileToken) params.push(`token=${fileToken}`);
+		const qs = params.length ? `?${params.join('&')}` : '';
+		return `${PUBLIC_POCKETBASE_URL}/api/files/${stop.collectionId}/${stop.id}/${filename}${qs}`;
+	}
+
+	function toggleExistingPhoto(filename: string) {
+		const next = new Set(removedPhotos);
+		if (next.has(filename)) next.delete(filename);
+		else next.add(filename);
+		removedPhotos = next;
+	}
+
+	function toggleExistingVideo(filename: string) {
+		const next = new Set(removedVideos);
+		if (next.has(filename)) next.delete(filename);
+		else next.add(filename);
+		removedVideos = next;
+	}
+
+	function toggleExistingReceipt(filename: string) {
+		const next = new Set(removedReceipts);
+		if (next.has(filename)) next.delete(filename);
+		else next.add(filename);
+		removedReceipts = next;
+	}
+
+	function toJpeg(file: File): Promise<File> {
+		return new Promise((resolve, reject) => {
+			// Already an accepted format — pass through
+			if (['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+				return resolve(file);
+			}
+			const img = new Image();
+			const objectUrl = URL.createObjectURL(file);
+			img.onload = () => {
+				const canvas = document.createElement('canvas');
+				canvas.width = img.naturalWidth;
+				canvas.height = img.naturalHeight;
+				canvas.getContext('2d')!.drawImage(img, 0, 0);
+				canvas.toBlob(
+					(blob) => {
+						URL.revokeObjectURL(objectUrl);
+						if (!blob) return reject(new Error('conversion failed'));
+						const name = file.name.replace(/\.[^.]+$/, '.jpg');
+						resolve(new File([blob], name, { type: 'image/jpeg' }));
+					},
+					'image/jpeg',
+					0.9
+				);
+			};
+			img.onerror = () => {
+				URL.revokeObjectURL(objectUrl);
+				reject(new Error('could not load image'));
+			};
+			img.src = objectUrl;
+		});
+	}
+
+	async function addImageFiles(input: HTMLInputElement, files: File[], urls: string[]) {
+		if (input.files) {
+			for (const f of input.files) {
+				try {
+					const converted = await toJpeg(f);
+					files.push(converted);
+					urls.push(URL.createObjectURL(converted));
+				} catch {
+					// skip files that can't be converted
+				}
+			}
+		}
+		input.value = '';
 	}
 
 	function addFiles(input: HTMLInputElement, files: File[], urls: string[]) {
@@ -115,6 +258,7 @@
 
 	onDestroy(() => {
 		clearFiles(photos, photoUrls);
+		clearFiles(videos, videoUrls);
 		clearFiles(receipts, receiptUrls);
 	});
 
@@ -180,9 +324,16 @@
 			}
 
 			for (const f of photos) fd.append('photos+', f);
+			for (const f of videos) fd.append('videos+', f);
 			for (const f of receipts) fd.append('receipts+', f);
+			// Edit mode: tell PB to drop the existing files the user removed.
+			for (const filename of removedPhotos) fd.append('photos-', filename);
+			for (const filename of removedVideos) fd.append('videos-', filename);
+			for (const filename of removedReceipts) fd.append('receipts-', filename);
 
-			const saved = await pb.collection('stops').create<Stop>(fd);
+			const saved = stop
+				? await pb.collection('stops').update<Stop>(stop.id, fd)
+				: await pb.collection('stops').create<Stop>(fd);
 			onSaved(saved);
 			onClose();
 		} catch (err) {
@@ -199,6 +350,22 @@
 				errorMessage = (err as Error).message;
 			}
 		} finally {
+			busy = false;
+		}
+	}
+
+	async function handleDelete() {
+		if (!stop) return;
+		const label = stop.name || 'this stop';
+		if (!confirm(`Delete ${label}? Photos and receipts go with it.`)) return;
+		busy = true;
+		errorMessage = '';
+		try {
+			await pb.collection('stops').delete(stop.id);
+			onDeleted?.(stop.id);
+			onClose();
+		} catch (err) {
+			errorMessage = (err as Error).message;
 			busy = false;
 		}
 	}
@@ -230,7 +397,7 @@
 		>
 			<div class="head">
 				<div class="drag-handle"></div>
-				<h2 id="stop-form-title">Add stop</h2>
+				<h2 id="stop-form-title">{isEdit ? 'Edit stop' : 'Add stop'}</h2>
 				<button type="button" onclick={onClose} aria-label="Close" class="x">×</button>
 			</div>
 
@@ -308,7 +475,7 @@
 							</label>
 							<label class="grow">
 								<span>Gallons</span>
-								<input type="number" step="0.01" bind:value={gallons} />
+								<input type="number" step="any" bind:value={gallons} />
 							</label>
 							<label class="grow">
 								<span>$/gallon</span>
@@ -341,7 +508,7 @@
 						capture="environment"
 						multiple
 						hidden
-						onchange={(e) => addFiles(e.currentTarget, photos, photoUrls)}
+						onchange={(e) => addImageFiles(e.currentTarget, photos, photoUrls)}
 					/>
 					<input
 						bind:this={photoLibraryInput}
@@ -349,8 +516,27 @@
 						accept="image/*"
 						multiple
 						hidden
-						onchange={(e) => addFiles(e.currentTarget, photos, photoUrls)}
+						onchange={(e) => addImageFiles(e.currentTarget, photos, photoUrls)}
 					/>
+					{#if existingPhotos.length > 0}
+						<div class="thumbs">
+							{#each existingPhotos as filename}
+								{@const willRemove = removedPhotos.has(filename)}
+								<div class="thumb existing" class:will-remove={willRemove}>
+									<img src={existingFileUrl(filename, '200x200f', false)} alt="" />
+									<button
+										type="button"
+										class="thumb-x"
+										onclick={() => toggleExistingPhoto(filename)}
+										aria-label={willRemove ? 'Undo remove' : 'Remove photo'}
+										title={willRemove ? 'Click to keep' : 'Click to remove'}
+									>
+										{willRemove ? '↺' : '×'}
+									</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
 					{#if photos.length > 0}
 						<div class="thumbs">
 							{#each photos as _photo, i (photoUrls[i])}
@@ -361,6 +547,72 @@
 										class="thumb-x"
 										onclick={() => removeFile(photos, photoUrls, i)}
 										aria-label="Remove photo"
+									>
+										×
+									</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+
+				<div class="picker">
+					<span class="picker-label">Videos <em>(public)</em></span>
+					<div class="picker-buttons">
+						<button type="button" class="pickbtn" onclick={() => videoInput?.click()}>
+							🎬 Video
+						</button>
+						{#if videos.length > 0}
+							<span class="picker-count">{videos.length}</span>
+						{/if}
+					</div>
+					<input
+						bind:this={videoInput}
+						type="file"
+						accept="video/*"
+						multiple
+						hidden
+						onchange={(e) => addFiles(e.currentTarget, videos, videoUrls)}
+					/>
+					{#if existingVideos.length > 0}
+						<div class="thumbs">
+							{#each existingVideos as filename}
+								{@const willRemove = removedVideos.has(filename)}
+								<div class="thumb existing" class:will-remove={willRemove}>
+									<video
+										src={existingFileUrl(filename, '', false)}
+										muted
+										preload="metadata"
+										style="width:100%;height:100%;object-fit:cover;"
+									></video>
+									<button
+										type="button"
+										class="thumb-x"
+										onclick={() => toggleExistingVideo(filename)}
+										aria-label={willRemove ? 'Undo remove' : 'Remove video'}
+										title={willRemove ? 'Click to keep' : 'Click to remove'}
+									>
+										{willRemove ? '↺' : '×'}
+									</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
+					{#if videos.length > 0}
+						<div class="thumbs">
+							{#each videos as _v, i (videoUrls[i])}
+								<div class="thumb">
+									<video
+										src={videoUrls[i]}
+										muted
+										preload="metadata"
+										style="width:100%;height:100%;object-fit:cover;"
+									></video>
+									<button
+										type="button"
+										class="thumb-x"
+										onclick={() => removeFile(videos, videoUrls, i)}
+										aria-label="Remove video"
 									>
 										×
 									</button>
@@ -390,7 +642,7 @@
 						capture="environment"
 						multiple
 						hidden
-						onchange={(e) => addFiles(e.currentTarget, receipts, receiptUrls)}
+						onchange={(e) => addImageFiles(e.currentTarget, receipts, receiptUrls)}
 					/>
 					<input
 						bind:this={receiptLibraryInput}
@@ -398,8 +650,31 @@
 						accept="image/*"
 						multiple
 						hidden
-						onchange={(e) => addFiles(e.currentTarget, receipts, receiptUrls)}
+						onchange={(e) => addImageFiles(e.currentTarget, receipts, receiptUrls)}
 					/>
+					{#if existingReceipts.length > 0}
+						<div class="thumbs">
+							{#each existingReceipts as filename}
+								{@const willRemove = removedReceipts.has(filename)}
+								<div class="thumb existing" class:will-remove={willRemove}>
+									{#if fileToken}
+										<img src={existingFileUrl(filename, '200x200f', true)} alt="" />
+									{:else}
+										<div class="thumb-stub">…</div>
+									{/if}
+									<button
+										type="button"
+										class="thumb-x"
+										onclick={() => toggleExistingReceipt(filename)}
+										aria-label={willRemove ? 'Undo remove' : 'Remove receipt'}
+										title={willRemove ? 'Click to keep' : 'Click to remove'}
+									>
+										{willRemove ? '↺' : '×'}
+									</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
 					{#if receipts.length > 0}
 						<div class="thumbs">
 							{#each receipts as _r, i (receiptUrls[i])}
@@ -425,9 +700,20 @@
 				</label>
 
 				<div class="actions">
+					{#if isEdit}
+						<button
+							type="button"
+							class="danger"
+							onclick={handleDelete}
+							disabled={busy}
+							aria-label="Delete stop"
+						>
+							delete
+						</button>
+					{/if}
 					<button type="button" class="ghost" onclick={onClose} disabled={busy}>cancel</button>
 					<button type="submit" class="primary" disabled={busy}>
-						{busy ? 'saving…' : 'save stop'}
+						{busy ? 'saving…' : isEdit ? 'save' : 'save stop'}
 					</button>
 				</div>
 			</form>
@@ -775,5 +1061,49 @@
 
 	.thumb-x:hover {
 		background: rgba(0, 0, 0, 0.9);
+	}
+
+	.thumb.existing {
+		border: 1px solid var(--color-border);
+	}
+	.thumb.existing.will-remove img {
+		opacity: 0.25;
+		filter: grayscale(1);
+	}
+	.thumb.existing.will-remove .thumb-x {
+		background: var(--color-accent);
+		color: #000;
+	}
+
+	.thumb-stub {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--color-muted);
+		font-family: var(--font-mono);
+		font-size: 0.85rem;
+	}
+
+	.danger {
+		background: transparent;
+		border: 1px solid #ff6b6b;
+		color: #ff6b6b;
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		padding: 0.55rem 0.9rem;
+		border-radius: 3px;
+		cursor: pointer;
+		margin-right: auto;
+	}
+	.danger:hover {
+		background: rgba(255, 107, 107, 0.1);
+	}
+	.danger:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
 	}
 </style>

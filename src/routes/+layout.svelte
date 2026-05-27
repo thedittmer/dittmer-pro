@@ -27,7 +27,7 @@
 <LoginModal />
 
 <div class="theme-corner">
-	<ThemeToggle />
+	<ThemeToggle satellite={page.url.pathname === '/map'} />
 </div>
 
 <main class="site-main">

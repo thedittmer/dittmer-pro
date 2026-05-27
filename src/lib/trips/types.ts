@@ -56,6 +56,7 @@ export interface Stop extends RecordModel {
 	address: string;
 	timestamp: string;
 	photos: string[];
+	videos: string[];
 	receipts: string[];
 	notes: string;
 	// Gas-specific:
