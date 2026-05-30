@@ -17,6 +17,7 @@ export type SceneKey =
 	| 'regulations'
 	| 'sectional'
 	| 'loading'
+	| 'operations'
 	| 'generic';
 
 /** Common lifecycle for an interactive 3D lesson scene (mirrors first-light). */

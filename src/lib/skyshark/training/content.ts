@@ -812,5 +812,180 @@ export const studySections: StudySection[] = [
 				]
 			}
 		]
+	},
+	{
+		id: 'operations',
+		order: 6,
+		domain: 'operations',
+		title: 'Operations',
+		slug: 'operations',
+		summary:
+			'Radio, airports, emergencies, decision-making, physiology & maintenance — FAA ACS Area V (the largest area).',
+		scene: 'operations',
+		ready: true,
+		lessons: [
+			{
+				// UA.V.A
+				id: 'radio',
+				title: 'Radio & communications',
+				check: {
+					q: 'At a non-towered airport, what frequency do pilots use to announce position?',
+					a: 'The CTAF — Common Traffic Advisory Frequency.'
+				},
+				lines: [
+					{
+						text: "You usually won't talk on the radio to fly a drone, but you must understand the chatter to stay clear of crewed aircraft.",
+						focus: null
+					},
+					{
+						text: 'At a non-towered airport, pilots self-announce their position and intentions on the CTAF — the Common Traffic Advisory Frequency.',
+						focus: null
+					},
+					{
+						text: 'UNICOM is a private advisory station, and ATIS is a recorded broadcast of an airport’s current conditions.',
+						focus: null
+					},
+					{
+						text: 'Aircraft identify by call sign in the phonetic alphabet — alpha, bravo, charlie — with altitudes and directions in standard phraseology.',
+						focus: null
+					}
+				]
+			},
+			{
+				// UA.V.B
+				id: 'airport-ops',
+				title: 'Airport operations',
+				check: {
+					q: 'What turns does the standard traffic pattern use?',
+					a: 'Left turns, unless the chart or markings indicate right traffic.'
+				},
+				lines: [
+					{
+						text: 'Airports come in several types: towered, non-towered, heliports, and seaplane bases.',
+						focus: null
+					},
+					{
+						text: 'Crewed aircraft fly a rectangular traffic pattern to land, and the standard pattern uses left turns. Know it so you can stay out of their way.',
+						focus: 'pattern'
+					},
+					{
+						text: 'Runways are numbered by magnetic heading with the last zero dropped — runway two-seven points about two hundred seventy degrees.',
+						focus: 'runway'
+					},
+					{
+						text: 'A windsock or segmented circle shows the wind, so aircraft land into it. Watch for bird and wildlife hazards, and stay out of Security Identification Display Areas.',
+						focus: 'wind'
+					}
+				]
+			},
+			{
+				// UA.V.C
+				id: 'emergencies',
+				title: 'Emergencies & batteries',
+				check: {
+					q: 'You lose the control link and the aircraft drifts off. What is this called?',
+					a: 'A fly-away — know your aircraft’s lost-link behavior (e.g., return-to-home).'
+				},
+				lines: [
+					{
+						text: 'Plan for emergencies before you fly, and brief everyone on their role.',
+						focus: null
+					},
+					{
+						text: 'Lithium batteries are a real hazard: handle and charge them carefully, never use a damaged or swollen pack, and know they can catch fire.',
+						focus: null
+					},
+					{
+						text: 'If you lose the control link the aircraft may fly away — know its lost-link behavior, like return-to-home. A lost GPS signal can cause drift or erratic flight.',
+						focus: null
+					},
+					{
+						text: 'Your radio link shares crowded frequency bands, so interference is possible. Have a plan for night and over-people operations too.',
+						focus: null
+					}
+				]
+			},
+			{
+				// UA.V.D
+				id: 'adm',
+				title: 'Decision-making',
+				check: {
+					q: 'Name the five hazardous attitudes.',
+					a: 'Anti-authority, impulsivity, invulnerability, macho, and resignation.'
+				},
+				lines: [
+					{
+						text: 'Most accidents trace to decisions, not machines. Aeronautical decision-making — ADM — is the structured way you choose the safe option.',
+						focus: null
+					},
+					{
+						text: 'Watch for the five hazardous attitudes: anti-authority, impulsivity, invulnerability, macho, and resignation. Each has an antidote.',
+						focus: null
+					},
+					{
+						text: 'Use crew resource management: lean on your visual observers, checklists, and every resource available, and keep your situational awareness.',
+						focus: null
+					},
+					{
+						text: 'Manage risk: identify the hazards, weigh them, and break the chain before the last link causes an accident.',
+						focus: null
+					}
+				]
+			},
+			{
+				// UA.V.E
+				id: 'physiology',
+				title: 'Physiology',
+				check: {
+					q: 'How is fatigue best described for a remote pilot?',
+					a: 'An impaired state — it degrades judgment and reaction. Don’t fly fatigued.'
+				},
+				lines: [
+					{
+						text: 'You are part of the system too. Fatigue, stress, dehydration, and heatstroke all degrade performance — fatigue is an impaired state.',
+						focus: null
+					},
+					{
+						text: 'Alcohol and drugs are out: none within eight hours, never while impaired, and check that any medication is safe before you fly.',
+						focus: null
+					},
+					{
+						text: 'Use good vision: scan the sky in small segments for short intervals, and at night look slightly off-center and beware of visual illusions.',
+						focus: null
+					},
+					{
+						text: "If you are not fit for flight — sick, tired, or stressed — don't fly. You are the pilot in command.",
+						focus: null
+					}
+				]
+			},
+			{
+				// UA.V.F
+				id: 'maintenance',
+				title: 'Maintenance & inspection',
+				check: {
+					q: 'When must you establish your own maintenance schedule?',
+					a: 'When the manufacturer doesn’t provide one — base it on how you use the aircraft.'
+				},
+				lines: [
+					{
+						text: 'Before every flight, do a preflight inspection: airframe, propellers, battery, control link, and software.',
+						focus: null
+					},
+					{
+						text: "Follow the manufacturer's maintenance guidance. If they don't give a schedule, create your own based on how hard you fly.",
+						focus: null
+					},
+					{
+						text: 'Keep records of maintenance and problems, and fix mechanical issues — especially with the battery and your control device — before they cause a failure.',
+						focus: null
+					},
+					{
+						text: 'For operations over people in Categories two and three, the manufacturer must provide a Declaration of Compliance.',
+						focus: null
+					}
+				]
+			}
+		]
 	}
 ];

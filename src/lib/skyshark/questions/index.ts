@@ -4,24 +4,27 @@ import { weatherQuestions } from './weather';
 import { regulationsQuestions } from './regulations';
 import { sectionalQuestions } from './sectional';
 import { loadingQuestions } from './loading';
+import { operationsQuestions } from './operations';
 
 export const questionsByDomain: Record<Domain, Question[]> = {
 	airspace: airspaceQuestions,
 	weather: weatherQuestions,
 	regulations: regulationsQuestions,
 	sectional: sectionalQuestions,
-	'loading-performance': loadingQuestions
+	'loading-performance': loadingQuestions,
+	operations: operationsQuestions
 };
 
 export const allQuestions: Question[] = Object.values(questionsByDomain).flat();
 
-/** The five levels, in Sky Shark order. */
+/** The knowledge domains, in order (FAA ACS Areas). */
 export const domains: Domain[] = [
 	'airspace',
 	'weather',
 	'regulations',
 	'sectional',
-	'loading-performance'
+	'loading-performance',
+	'operations'
 ];
 
 export const domainLabels: Record<Domain, string> = {
@@ -29,7 +32,8 @@ export const domainLabels: Record<Domain, string> = {
 	weather: 'Weather',
 	regulations: 'Regulations',
 	sectional: 'Sectional Charts',
-	'loading-performance': 'Loading & Performance'
+	'loading-performance': 'Loading & Performance',
+	operations: 'Operations'
 };
 
 /** Single-letter callsign drawn on the enemy sprite. */
@@ -38,7 +42,8 @@ export const domainTag: Record<Domain, string> = {
 	weather: 'W',
 	regulations: 'R',
 	sectional: 'S',
-	'loading-performance': 'L'
+	'loading-performance': 'L',
+	operations: 'O'
 };
 
 function shuffle<T>(arr: T[]): T[] {

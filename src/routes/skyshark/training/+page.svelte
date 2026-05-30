@@ -8,6 +8,10 @@
 	} from '$lib/skyshark/training/scenes/regulations';
 	import { createSectionalScene, sectionalFocus } from '$lib/skyshark/training/scenes/sectional';
 	import { createLoadingScene, loadingFocus } from '$lib/skyshark/training/scenes/loading';
+	import {
+		createOperationsScene,
+		operationsFocus
+	} from '$lib/skyshark/training/scenes/operations';
 	import { createNarrator, type Narrator } from '$lib/skyshark/training/narrator';
 	import { loadSections } from '$lib/skyshark/training/loader';
 	import { studySections } from '$lib/skyshark/training/content';
@@ -46,7 +50,9 @@
 						? sectionalFocus
 						: active.scene === 'loading'
 							? loadingFocus
-							: []
+							: active.scene === 'operations'
+								? operationsFocus
+								: []
 	);
 
 	// Keep the spoken line in view as narration advances (hands-free on phone).
@@ -71,6 +77,7 @@
 		else if (active.scene === 'regulations') scene = createRegulationsScene(canvas);
 		else if (active.scene === 'sectional') scene = createSectionalScene(canvas);
 		else if (active.scene === 'loading') scene = createLoadingScene(canvas);
+		else if (active.scene === 'operations') scene = createOperationsScene(canvas);
 		scene?.resize();
 	}
 

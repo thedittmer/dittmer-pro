@@ -14,13 +14,14 @@
  * - `domain` matches the five level themes (Sky Shark tradition: 5 levels).
  */
 
-/** The five Part 107 knowledge domains, one per level. */
+/** The Part 107 knowledge domains (FAA ACS Areas I–V). */
 export type Domain =
 	| 'airspace'
 	| 'weather'
 	| 'regulations'
 	| 'sectional'
-	| 'loading-performance';
+	| 'loading-performance'
+	| 'operations';
 
 /** A prompt is either text or a visual (chart symbol / airspace marker / METAR snippet image). */
 export type Prompt =
