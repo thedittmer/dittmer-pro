@@ -1,0 +1,15 @@
+{
+	"name": "Skyshark — Part 107 Trainer",
+	"short_name": "Skyshark",
+	"description": "An arcade shooter that trains you for the FAA Part 107 drone exam.",
+	"start_url": "/skyshark",
+	"scope": "/skyshark",
+	"display": "standalone",
+	"orientation": "portrait",
+	"background_color": "#06080f",
+	"theme_color": "#06080f",
+	"icons": [
+		{ "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+		{ "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+	]
+}

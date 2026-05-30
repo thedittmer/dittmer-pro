@@ -26,9 +26,11 @@
 <HiddenLoginTrigger />
 <LoginModal />
 
-<div class="theme-corner">
-	<ThemeToggle satellite={page.url.pathname === '/map'} />
-</div>
+{#if !page.url.pathname.startsWith('/skyshark')}
+	<div class="theme-corner">
+		<ThemeToggle satellite={page.url.pathname === '/map'} />
+	</div>
+{/if}
 
 <main class="site-main">
 	{@render children()}
