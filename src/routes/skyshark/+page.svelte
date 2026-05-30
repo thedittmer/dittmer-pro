@@ -200,6 +200,14 @@
 
 					<button class="play" onclick={start}>PLAY</button>
 					<a class="train" href="/skyshark/training">📖 Training — learn it first</a>
+					<a
+						class="train"
+						href="https://www.faa.gov/faq/where-can-i-find-study-materials-part-107-aeronautical-knowledge-test"
+						target="_blank"
+						rel="noopener"
+					>
+						📝 FAA practice test ↗
+					</a>
 				</div>
 			</div>
 		{/if}

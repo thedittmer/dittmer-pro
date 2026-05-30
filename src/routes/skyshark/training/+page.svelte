@@ -168,6 +168,12 @@
 		<a class="back" href="/skyshark">← game</a>
 		<span class="title">TRAINING · {active.title}</span>
 		<span class="spacer"></span>
+		<a
+			class="back"
+			href="https://www.faa.gov/faq/where-can-i-find-study-materials-part-107-aeronautical-knowledge-test"
+			target="_blank"
+			rel="noopener">practice test ↗</a
+		>
 	</header>
 
 	<nav class="sections" aria-label="Sections">
