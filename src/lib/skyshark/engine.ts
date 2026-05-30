@@ -46,6 +46,7 @@ export interface GameHandle {
 	setPointer(cssX: number): void;
 	nudge(dir: -1 | 1): void;
 	setMode(mode: GameMode): void;
+	setSound(on: boolean): void;
 	resize(): void;
 	dispose(): void;
 	getState(): GameState;
@@ -92,6 +93,7 @@ export function createGame(canvas: HTMLCanvasElement, options: GameOptions): Gam
 
 	// ---- Sound effects (synthesized via WebAudio; no asset files) ----
 	let actx: AudioContext | null = null;
+	let soundOn = true; // mirrors the page's read-aloud setting (master audio)
 	function ensureAudio() {
 		try {
 			if (!actx) {
@@ -106,7 +108,7 @@ export function createGame(canvas: HTMLCanvasElement, options: GameOptions): Gam
 		}
 	}
 	function tone(freq: number, dur: number, type: OscillatorType, vol: number, slideTo?: number) {
-		if (!actx) return;
+		if (!soundOn || !actx) return;
 		const t0 = actx.currentTime;
 		const osc = actx.createOscillator();
 		const g = actx.createGain();
@@ -120,7 +122,7 @@ export function createGame(canvas: HTMLCanvasElement, options: GameOptions): Gam
 		osc.stop(t0 + dur + 0.02);
 	}
 	function noise(dur: number, vol: number) {
-		if (!actx) return;
+		if (!soundOn || !actx) return;
 		const t0 = actx.currentTime;
 		const n = Math.floor(actx.sampleRate * dur);
 		const buf = actx.createBuffer(1, n, actx.sampleRate);
@@ -544,6 +546,9 @@ export function createGame(canvas: HTMLCanvasElement, options: GameOptions): Gam
 			mode = m;
 			state.mode = m;
 			emit();
+		},
+		setSound(on) {
+			soundOn = on;
 		},
 		resize() {
 			const rect = canvas.getBoundingClientRect();

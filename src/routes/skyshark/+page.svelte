@@ -130,6 +130,13 @@
 			lastSpokenQid = '';
 		}
 	});
+	// The read-aloud toggle is the master audio switch: it also mutes game SFX.
+	// Read `readAloud` unconditionally so it's always tracked as a dependency —
+	// `game?.…` would short-circuit and drop the dependency while game is null.
+	$effect(() => {
+		const on = readAloud;
+		game?.setSound(on);
+	});
 
 	function build() {
 		game = createGame(canvas, {
@@ -138,6 +145,7 @@
 			best: bestScore(),
 			onState: (s) => (view = s)
 		});
+		game.setSound(readAloud); // sync master-audio state to a freshly built game
 		game.resize();
 	}
 
@@ -314,7 +322,7 @@
 							onclick={toggleReadAloud}
 							aria-pressed={readAloud}
 						>
-							🔊 Read aloud: {readAloud ? 'On' : 'Off'}
+							{readAloud ? '🔊' : '🔇'} Read aloud: {readAloud ? 'On' : 'Off'}
 						</button>
 					{:else}
 						<p class="hint">Drag to steer · auto-fire. Just blow stuff up — no studying.</p>
