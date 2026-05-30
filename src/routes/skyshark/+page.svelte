@@ -27,8 +27,8 @@
 	let saved = $state(false);
 	let savedBest = $state(0);
 	let showIosHint = $state(false);
-	/** When on, the game reads the question/choices and the correct answer aloud. */
-	let readAloud = $state(false);
+	/** When on, the game reads the question/choices and the correct answer aloud. On by default. */
+	let readAloud = $state(true);
 	let lastSpokenQid = '';
 	/** Keys (`game/<id>/prompt|answer`) that have a pre-rendered Kokoro clip. */
 	let audioManifest = $state<Set<string>>(new Set());
@@ -226,7 +226,8 @@
 			const dismissed = localStorage.getItem('skyshark.iosHint') === '1';
 			showIosHint = isIos && !standalone && !dismissed;
 			try {
-				readAloud = localStorage.getItem('skyshark.readAloud') === '1';
+				const stored = localStorage.getItem('skyshark.readAloud');
+				if (stored !== null) readAloud = stored === '1'; // else keep default (on)
 			} catch {
 				/* ignore */
 			}
@@ -272,6 +273,15 @@
 				>
 				<span class="pill">BEST {Math.max(view.best, view.score)}</span>
 			</div>
+			<button
+				class="snd-toggle"
+				onclick={toggleReadAloud}
+				aria-pressed={readAloud}
+				aria-label="Toggle read aloud"
+				title="Read aloud"
+			>
+				{readAloud ? '🔊' : '🔇'}
+			</button>
 		{/if}
 
 		{#if view.status === 'ready'}
@@ -585,6 +595,24 @@
 		background: #ffb070;
 		color: #06080f;
 		border-color: #ffb070;
+	}
+	.snd-toggle {
+		position: absolute;
+		top: 2.6rem;
+		right: 0.5rem;
+		width: 2.2rem;
+		height: 2.2rem;
+		border-radius: 999px;
+		border: 1px solid rgba(255, 176, 112, 0.3);
+		background: rgba(6, 8, 15, 0.6);
+		color: #ffd9b0;
+		font-size: 1rem;
+		line-height: 1;
+		cursor: pointer;
+		z-index: 5;
+	}
+	.snd-toggle:hover {
+		background: rgba(255, 176, 112, 0.18);
 	}
 	.back {
 		font-family: var(--font-mono);

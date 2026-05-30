@@ -90,6 +90,67 @@ const START_LIVES = 3;
 export function createGame(canvas: HTMLCanvasElement, options: GameOptions): GameHandle {
 	const ctx = canvas.getContext('2d')!;
 
+	// ---- Sound effects (synthesized via WebAudio; no asset files) ----
+	let actx: AudioContext | null = null;
+	function ensureAudio() {
+		try {
+			if (!actx) {
+				const AC =
+					window.AudioContext ||
+					(window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+				actx = new AC();
+			}
+			if (actx.state === 'suspended') void actx.resume();
+		} catch {
+			actx = null;
+		}
+	}
+	function tone(freq: number, dur: number, type: OscillatorType, vol: number, slideTo?: number) {
+		if (!actx) return;
+		const t0 = actx.currentTime;
+		const osc = actx.createOscillator();
+		const g = actx.createGain();
+		osc.type = type;
+		osc.frequency.setValueAtTime(freq, t0);
+		if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(1, slideTo), t0 + dur);
+		g.gain.setValueAtTime(vol, t0);
+		g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+		osc.connect(g).connect(actx.destination);
+		osc.start(t0);
+		osc.stop(t0 + dur + 0.02);
+	}
+	function noise(dur: number, vol: number) {
+		if (!actx) return;
+		const t0 = actx.currentTime;
+		const n = Math.floor(actx.sampleRate * dur);
+		const buf = actx.createBuffer(1, n, actx.sampleRate);
+		const data = buf.getChannelData(0);
+		for (let i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+		const src = actx.createBufferSource();
+		src.buffer = buf;
+		const g = actx.createGain();
+		g.gain.setValueAtTime(vol, t0);
+		g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+		const lp = actx.createBiquadFilter();
+		lp.type = 'lowpass';
+		lp.frequency.setValueAtTime(1400, t0);
+		src.connect(lp).connect(g).connect(actx.destination);
+		src.start(t0);
+		src.stop(t0 + dur + 0.02);
+	}
+	const sfxShoot = () => tone(900, 0.07, 'square', 0.05, 1500);
+	const sfxExplode = () => {
+		noise(0.32, 0.18);
+		tone(180, 0.3, 'triangle', 0.12, 60);
+	};
+	const sfxCorrect = () => {
+		tone(660, 0.07, 'square', 0.1, 990);
+		window.setTimeout(() => tone(990, 0.1, 'square', 0.1, 1320), 70);
+	};
+	const sfxWrong = () => tone(200, 0.28, 'sawtooth', 0.16, 90);
+	const sfxHit = () => tone(150, 0.35, 'triangle', 0.2, 55);
+	const sfxOver = () => tone(320, 0.55, 'sawtooth', 0.16, 70);
+
 	let W = 360;
 	let H = 640;
 	let dpr = 1;
@@ -211,6 +272,7 @@ export function createGame(canvas: HTMLCanvasElement, options: GameOptions): Gam
 		enemies = enemies.filter((x) => x !== e);
 		state.score += points;
 		flash = 0.12;
+		sfxExplode();
 		emit(); // push the new score to the HUD (arcade kills happen inside the loop)
 	}
 
@@ -219,6 +281,7 @@ export function createGame(canvas: HTMLCanvasElement, options: GameOptions): Gam
 		enemies = enemies.filter((x) => x !== e);
 		state.lives -= 1;
 		state.streak = 0;
+		sfxHit();
 		if (state.lives <= 0) gameOver();
 		else emit();
 	}
@@ -228,6 +291,7 @@ export function createGame(canvas: HTMLCanvasElement, options: GameOptions): Gam
 		state.best = Math.max(state.best, state.score);
 		running = false;
 		cancelAnimationFrame(raf);
+		sfxOver();
 		emit();
 	}
 
@@ -266,6 +330,7 @@ export function createGame(canvas: HTMLCanvasElement, options: GameOptions): Gam
 			fireTimer -= dt;
 			if (fireTimer <= 0) {
 				bullets.push({ x: player.x, y: player.y - 16, vy: -560 });
+				sfxShoot();
 				fireTimer = 0.22;
 			}
 		}
@@ -400,6 +465,7 @@ export function createGame(canvas: HTMLCanvasElement, options: GameOptions): Gam
 
 	return {
 		play() {
+			ensureAudio(); // called from a user gesture (PLAY) → unlocks WebAudio
 			state.status = 'playing';
 			state.score = 0;
 			state.lives = START_LIVES;
@@ -453,6 +519,7 @@ export function createGame(canvas: HTMLCanvasElement, options: GameOptions): Gam
 			if (!t || !t.question) return;
 			if (choiceId === t.question.correctAnswer) {
 				state.streak += 1;
+				sfxCorrect();
 				kill(t, 100 + state.streak * 10);
 				// tracer
 				boom(player.x, player.y - 10, BULLET);
@@ -463,6 +530,7 @@ export function createGame(canvas: HTMLCanvasElement, options: GameOptions): Gam
 				state.streak = 0;
 				state.lastWrong = { question: t.question, chosenId: choiceId };
 				stopLoop();
+				sfxWrong();
 				emit();
 			}
 		},
