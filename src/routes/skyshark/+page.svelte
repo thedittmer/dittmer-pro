@@ -30,6 +30,9 @@
 	/** When on, the game reads the question/choices and the correct answer aloud. */
 	let readAloud = $state(false);
 	let lastSpokenQid = '';
+	/** Keys (`game/<id>/prompt|answer`) that have a pre-rendered Kokoro clip. */
+	let audioManifest = $state<Set<string>>(new Set());
+	let gameAudio: HTMLAudioElement | null = null;
 
 	const wrongChoiceText: string = $derived(
 		view.lastWrong
@@ -65,9 +68,34 @@
 	function stopSpeech() {
 		if (browser && 'speechSynthesis' in window) window.speechSynthesis.cancel();
 	}
+	function stopGameAudio() {
+		if (gameAudio) {
+			gameAudio.pause();
+			gameAudio = null;
+		}
+		stopSpeech();
+	}
+	/** Prefer the pre-rendered Kokoro clip; fall back to browser speech if absent. */
+	function playClipOrSpeak(key: string, fallback: string) {
+		stopGameAudio();
+		if (audioManifest.has(key)) {
+			const el = new Audio(`/skyshark/audio/${key}.mp3`);
+			gameAudio = el;
+			el.onerror = () => {
+				if (gameAudio === el) gameAudio = null;
+				speak(fallback);
+			};
+			void el.play().catch(() => {
+				if (gameAudio === el) gameAudio = null;
+				speak(fallback);
+			});
+		} else {
+			speak(fallback);
+		}
+	}
 	function questionRead(q: Question): string {
 		const p = q.prompt.kind === 'text' ? q.prompt.text : q.prompt.alt;
-		return `${p} ${q.choices.map((c, i) => `${i + 1}. ${c.text}.`).join(' ')}`;
+		return `${p} ${q.choices.map((c, i) => `Option ${i + 1}, ${c.text}.`).join(' ')}`;
 	}
 	function toggleReadAloud() {
 		readAloud = !readAloud;
@@ -76,7 +104,7 @@
 		} catch {
 			/* ignore */
 		}
-		if (!readAloud) stopSpeech();
+		if (!readAloud) stopGameAudio();
 		else lastSpokenQid = ''; // allow the current question to be read immediately
 	}
 
@@ -86,18 +114,19 @@
 		if (!readAloud || mode !== 'study' || view.status !== 'playing' || !q) return;
 		if (q.id === lastSpokenQid) return;
 		lastSpokenQid = q.id;
-		speak(questionRead(q));
+		playClipOrSpeak(`game/${q.id}/prompt`, questionRead(q));
 	});
 	// Read the correct answer when the teaching overlay appears.
 	$effect(() => {
 		if (readAloud && view.status === 'teaching' && view.lastWrong) {
-			speak(`Correct answer. ${correctChoiceText}. ${view.lastWrong.question.explanation}`);
+			const q = view.lastWrong.question;
+			playClipOrSpeak(`game/${q.id}/answer`, `The correct answer is, ${correctChoiceText}. ${q.explanation}`);
 		}
 	});
 	// Stop talking when not in an active question.
 	$effect(() => {
 		if (view.status === 'ready' || view.status === 'over' || view.status === 'paused') {
-			stopSpeech();
+			stopGameAudio();
 			lastSpokenQid = '';
 		}
 	});
@@ -180,6 +209,14 @@
 		const ro = new ResizeObserver(() => game?.resize());
 		ro.observe(stageEl);
 
+		// Load the Kokoro clip manifest (absent → browser-speech fallback).
+		fetch('/skyshark/audio/manifest.json')
+			.then((r) => (r.ok ? r.json() : []))
+			.then((arr) => {
+				if (Array.isArray(arr)) audioManifest = new Set(arr);
+			})
+			.catch(() => {});
+
 		if (browser) {
 			const ua = navigator.userAgent;
 			const isIos = /iPhone|iPad|iPod/.test(ua);
@@ -199,7 +236,7 @@
 			window.removeEventListener('resize', onResize);
 			window.removeEventListener('keydown', onKey);
 			ro.disconnect();
-			stopSpeech();
+			stopGameAudio();
 			game?.dispose();
 		});
 	});
