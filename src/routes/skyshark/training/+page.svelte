@@ -34,6 +34,8 @@
 	let playing = $state(false);
 	let revealCheck = $state(false);
 	let expanded = $state(false);
+	/** Keys (`section/lesson/index`) that have a pre-rendered narration clip. */
+	let audioManifest = $state<Set<string>>(new Set());
 
 	const lessons = $derived(active.lessons ?? null);
 	const lesson = $derived(lessons ? lessons[Math.min(lessonIndex, lessons.length - 1)] : null);
@@ -102,7 +104,14 @@
 
 	function startNarration(from = 0) {
 		narrator?.dispose();
-		narrator = createNarrator(activeLines, {
+		// Attach a pre-rendered clip URL to each line that has one; the narrator
+		// plays it and falls back to browser speech for any line without a clip.
+		const lid = lesson?.id ?? 'main';
+		const lines = activeLines.map((l, i) => {
+			const key = `${active.id}/${lid}/${i}`;
+			return audioManifest.has(key) ? { ...l, audio: `/skyshark/audio/${key}.mp3` } : l;
+		});
+		narrator = createNarrator(lines, {
 			onLine: (i, line) => {
 				lineIndex = i;
 				if (scene) scene.focus(line.focus ?? null);
@@ -130,6 +139,14 @@
 		mountScene();
 		const ro = new ResizeObserver(() => scene?.resize());
 		ro.observe(stageEl);
+
+		// Load the narration-clip manifest (absent → pure browser speech).
+		fetch('/skyshark/audio/manifest.json')
+			.then((r) => (r.ok ? r.json() : []))
+			.then((arr) => {
+				if (Array.isArray(arr)) audioManifest = new Set(arr);
+			})
+			.catch(() => {});
 
 		const onKey = (e: KeyboardEvent) => {
 			if (e.key === 'Escape' && expanded) expanded = false;

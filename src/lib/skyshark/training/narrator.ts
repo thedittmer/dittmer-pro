@@ -59,46 +59,44 @@ export function createNarrator(lines: NarrationLine[], cb: NarratorCallbacks): N
 		}
 		const line = lines[i];
 		cb.onLine(i, line);
-
-		if (line.audio) {
-			audioEl = new Audio(line.audio);
-			audioEl.onended = () => {
-				i += 1;
-				speakLine();
-			};
-			audioEl.onerror = () => {
-				i += 1;
-				speakLine();
-			};
-			void audioEl.play().catch(() => {
-				i += 1;
-				speakLine();
-			});
-			return;
-		}
-
-		if (!hasSpeech) {
-			// No TTS available: advance on a reading-time estimate so captions still flow.
-			const ms = Math.max(1800, line.text.length * 55);
-			window.setTimeout(() => {
-				if (stopped) return;
-				i += 1;
-				speakLine();
-			}, ms);
-			return;
-		}
-
-		const u = new SpeechSynthesisUtterance(line.text);
-		const v = pickVoice();
-		if (v) u.voice = v;
-		u.rate = 0.98;
-		u.pitch = 1;
-		u.onend = () => {
+		const next = () => {
 			if (stopped) return;
 			i += 1;
 			speakLine();
 		};
-		window.speechSynthesis.speak(u);
+
+		// Browser speech for this line (used directly, or as a fallback if a
+		// pre-rendered clip fails to load).
+		const speakViaSpeech = () => {
+			if (!hasSpeech) {
+				// No TTS at all: advance on a reading-time estimate so captions flow.
+				window.setTimeout(next, Math.max(1800, line.text.length * 55));
+				return;
+			}
+			const u = new SpeechSynthesisUtterance(line.text);
+			const v = pickVoice();
+			if (v) u.voice = v;
+			u.rate = 0.98;
+			u.pitch = 1;
+			u.onend = next;
+			window.speechSynthesis.speak(u);
+		};
+
+		if (line.audio) {
+			audioEl = new Audio(line.audio);
+			audioEl.onended = next;
+			audioEl.onerror = () => {
+				audioEl = null;
+				speakViaSpeech();
+			};
+			void audioEl.play().catch(() => {
+				audioEl = null;
+				speakViaSpeech();
+			});
+			return;
+		}
+
+		speakViaSpeech();
 	}
 
 	return {
