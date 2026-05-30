@@ -316,17 +316,20 @@
 						<p class="hint">
 							Answer the question to fire on the marked enemy. Wrong answers show you the right one.
 						</p>
-						<button
-							class="readaloud"
-							class:on={readAloud}
-							onclick={toggleReadAloud}
-							aria-pressed={readAloud}
-						>
-							{readAloud ? '🔊' : '🔇'} Read aloud: {readAloud ? 'On' : 'Off'}
-						</button>
 					{:else}
 						<p class="hint">Drag to steer · auto-fire. Just blow stuff up — no studying.</p>
 					{/if}
+
+					<!-- Master audio: narration (study) + sound effects, both modes. -->
+					<button
+						class="readaloud"
+						class:on={readAloud}
+						onclick={toggleReadAloud}
+						aria-pressed={readAloud}
+					>
+						{readAloud ? '🔊' : '🔇'}
+						{mode === 'study' ? 'Read aloud' : 'Sound'}: {readAloud ? 'On' : 'Off'}
+					</button>
 
 					<button class="play" onclick={start}>PLAY</button>
 					<a class="train" href="/skyshark/training">📖 Training — learn it first</a>
