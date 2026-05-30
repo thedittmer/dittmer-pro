@@ -201,5 +201,59 @@ export const airspaceQuestions: Question[] = [
 			'Federal airways (blue lines on sectionals) are usually within Class E airspace, starting at 1,200 ft AGL up to but not including 18,000 ft MSL.',
 		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 2, p. 6' },
 		difficulty: 3
+	},
+	{
+		id: 'as-011',
+		domain: 'airspace',
+		prompt: {
+			kind: 'text',
+			text: 'How would you find out whether a Military Operations Area (MOA) is active?'
+		},
+		choices: [
+			{ id: 'a', text: 'Refer to the chart legend / special-use airspace panel' },
+			{ id: 'b', text: 'Check the small UAS database' },
+			{ id: 'c', text: 'It is always active' },
+			{ id: 'd', text: 'MOAs are never charted' }
+		],
+		correctAnswer: 'a',
+		explanation:
+			'A MOA’s times of use, altitudes, and controlling agency are listed in the sectional chart’s special-use airspace panel (the legend).',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 2 (Special use airspace)' },
+		difficulty: 2
+	},
+	{
+		id: 'as-012',
+		domain: 'airspace',
+		prompt: {
+			kind: 'text',
+			text: 'A Military Training Route shown with a 4-digit number (e.g., VR1667) operates at:'
+		},
+		choices: [
+			{ id: 'a', text: 'At or below 1,500 feet AGL' },
+			{ id: 'b', text: 'Above 18,000 feet MSL' },
+			{ id: 'c', text: 'Exactly 10,000 feet MSL' },
+			{ id: 'd', text: 'Only above 1,500 feet AGL' }
+		],
+		correctAnswer: 'a',
+		explanation:
+			'MTRs with no segment above 1,500 ft AGL use 4-digit numbers (e.g., VR1667). Routes with segments above 1,500 ft AGL use 3 digits.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 2 (Other airspace)' },
+		difficulty: 3
+	},
+	{
+		id: 'as-013',
+		domain: 'airspace',
+		prompt: { kind: 'text', text: 'A Warning area (e.g., W-237) is located where, and contains what?' },
+		choices: [
+			{ id: 'a', text: 'Starting 3 NM off the coast, containing activity hazardous to aircraft' },
+			{ id: 'b', text: 'Only over the center of large cities' },
+			{ id: 'c', text: 'Always over military bases inland' },
+			{ id: 'd', text: 'It is airspace with no hazards' }
+		],
+		correctAnswer: 'a',
+		explanation:
+			'Warning areas extend from 3 NM outward from the U.S. coast over international or domestic waters and contain activity hazardous to nonparticipating aircraft.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 2 (Special use airspace)' },
+		difficulty: 3
 	}
 ];

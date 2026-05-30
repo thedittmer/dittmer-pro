@@ -105,5 +105,110 @@ export const regulationsQuestions: Question[] = [
 		explanation: 'You must be at least 16 years old to hold a remote pilot certificate with an sUAS rating.',
 		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 1 (Regulations / 14 CFR 107)' },
 		difficulty: 1
+	},
+	{
+		id: 'reg-007',
+		domain: 'regulations',
+		prompt: { kind: 'text', text: 'A small UAS must be registered with the FAA when it weighs:' },
+		choices: [
+			{ id: 'a', text: 'More than 0.55 pounds' },
+			{ id: 'b', text: 'More than 5 pounds' },
+			{ id: 'c', text: 'More than 25 pounds' },
+			{ id: 'd', text: 'Registration is never required' }
+		],
+		correctAnswer: 'a',
+		explanation:
+			'Under 14 CFR Part 48, any sUAS over 0.55 lb (up to 55 lb) must be registered, and the registration number marked on the exterior.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: '14 CFR Part 48 (Registration)' },
+		difficulty: 1
+	},
+	{
+		id: 'reg-008',
+		domain: 'regulations',
+		prompt: {
+			kind: 'text',
+			text: 'If your aircraft’s standard remote identification fails during a flight, you must:'
+		},
+		choices: [
+			{ id: 'a', text: 'Continue the flight as planned' },
+			{ id: 'b', text: 'Land as soon as practicable' },
+			{ id: 'c', text: 'Notify the nearest ATC tower' },
+			{ id: 'd', text: 'Switch to a broadcast module mid-flight' }
+		],
+		correctAnswer: 'b',
+		explanation:
+			'If Remote ID fails in flight, the remote PIC must land as soon as practicable.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: '14 CFR Part 89 (Remote ID)' },
+		difficulty: 2
+	},
+	{
+		id: 'reg-009',
+		domain: 'regulations',
+		prompt: { kind: 'text', text: 'How does a remote pilot keep their certificate current?' },
+		choices: [
+			{ id: 'a', text: 'Complete free online recurrent training every 24 calendar months' },
+			{ id: 'b', text: 'Retake the in-person exam every year' },
+			{ id: 'c', text: 'Nothing — the certificate never expires or lapses' },
+			{ id: 'd', text: 'Log 100 flight hours per year' }
+		],
+		correctAnswer: 'a',
+		explanation:
+			'Currency is maintained by completing the free online recurrent training every 24 calendar months.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: '14 CFR 107 subpart C' },
+		difficulty: 2
+	},
+	{
+		id: 'reg-010',
+		domain: 'regulations',
+		prompt: {
+			kind: 'text',
+			text: 'To operate at night or in civil twilight under Part 107, the aircraft must have:'
+		},
+		choices: [
+			{ id: 'a', text: 'Anti-collision lighting visible for at least 3 statute miles' },
+			{ id: 'b', text: 'A transponder' },
+			{ id: 'c', text: 'Landing lights only' },
+			{ id: 'd', text: 'No special equipment' }
+		],
+		correctAnswer: 'a',
+		explanation:
+			'Night and civil-twilight operations require anti-collision lighting visible for at least 3 statute miles (plus completion of the updated training).',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: '14 CFR 107.29' },
+		difficulty: 2
+	},
+	{
+		id: 'reg-011',
+		domain: 'regulations',
+		prompt: { kind: 'text', text: 'Under Part 107, a remote pilot may not operate within how many hours of consuming alcohol?' },
+		choices: [
+			{ id: 'a', text: '4 hours' },
+			{ id: 'b', text: '8 hours' },
+			{ id: 'c', text: '12 hours' },
+			{ id: 'd', text: '24 hours' }
+		],
+		correctAnswer: 'b',
+		explanation:
+			'No operating within 8 hours of consuming alcohol, while impaired, or with a blood alcohol concentration of 0.04% or greater.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: '14 CFR 107.27 / 91.17' },
+		difficulty: 2
+	},
+	{
+		id: 'reg-012',
+		domain: 'regulations',
+		prompt: {
+			kind: 'text',
+			text: 'A small UAS accident must be reported to the FAA within 10 days if it results in:'
+		},
+		choices: [
+			{ id: 'a', text: 'Any landing away from the launch point' },
+			{ id: 'b', text: 'Serious injury, loss of consciousness, or property damage over $500' },
+			{ id: 'c', text: 'Any battery that gets warm' },
+			{ id: 'd', text: 'Only if the FAA requests a report' }
+		],
+		correctAnswer: 'b',
+		explanation:
+			'Report within 10 days if the operation causes serious injury, loss of consciousness, or property damage of at least $500 (to other than the sUAS).',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: '14 CFR 107.9' },
+		difficulty: 2
 	}
 ];

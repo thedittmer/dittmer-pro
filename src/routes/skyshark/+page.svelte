@@ -3,7 +3,7 @@
 	import { browser } from '$app/environment';
 	import { createGame, type GameHandle, type GameState, type GameMode } from '$lib/skyshark/engine';
 	import { pickQuestions, domainLabels, domains } from '$lib/skyshark/questions';
-	import type { Domain } from '$lib/skyshark/types';
+	import type { Domain, Question } from '$lib/skyshark/types';
 	import { saveScore, bestScore } from '$lib/skyshark/scores';
 
 	let canvas: HTMLCanvasElement;
@@ -27,6 +27,9 @@
 	let saved = $state(false);
 	let savedBest = $state(0);
 	let showIosHint = $state(false);
+	/** When on, the game reads the question/choices and the correct answer aloud. */
+	let readAloud = $state(false);
+	let lastSpokenQid = '';
 
 	const wrongChoiceText: string = $derived(
 		view.lastWrong
@@ -40,6 +43,64 @@
 				)?.text ?? '')
 			: ''
 	);
+
+	// ---- Read-aloud (browser speech; dynamic so it reads whatever's on screen) ----
+	function pickVoice(): SpeechSynthesisVoice | null {
+		if (!browser || !('speechSynthesis' in window)) return null;
+		const voices = window.speechSynthesis.getVoices();
+		for (const name of ['Samantha', 'Ava', 'Allison', 'Google US English']) {
+			const v = voices.find((v) => v.name.includes(name));
+			if (v) return v;
+		}
+		return voices.find((v) => v.lang.startsWith('en')) ?? voices[0] ?? null;
+	}
+	function speak(text: string) {
+		if (!browser || !('speechSynthesis' in window)) return;
+		window.speechSynthesis.cancel();
+		const u = new SpeechSynthesisUtterance(text);
+		const v = pickVoice();
+		if (v) u.voice = v;
+		window.speechSynthesis.speak(u);
+	}
+	function stopSpeech() {
+		if (browser && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+	}
+	function questionRead(q: Question): string {
+		const p = q.prompt.kind === 'text' ? q.prompt.text : q.prompt.alt;
+		return `${p} ${q.choices.map((c, i) => `${i + 1}. ${c.text}.`).join(' ')}`;
+	}
+	function toggleReadAloud() {
+		readAloud = !readAloud;
+		try {
+			localStorage.setItem('skyshark.readAloud', readAloud ? '1' : '0');
+		} catch {
+			/* ignore */
+		}
+		if (!readAloud) stopSpeech();
+		else lastSpokenQid = ''; // allow the current question to be read immediately
+	}
+
+	// Read the current question + choices when it changes (study mode, mid-play).
+	$effect(() => {
+		const q = view.currentQuestion;
+		if (!readAloud || mode !== 'study' || view.status !== 'playing' || !q) return;
+		if (q.id === lastSpokenQid) return;
+		lastSpokenQid = q.id;
+		speak(questionRead(q));
+	});
+	// Read the correct answer when the teaching overlay appears.
+	$effect(() => {
+		if (readAloud && view.status === 'teaching' && view.lastWrong) {
+			speak(`Correct answer. ${correctChoiceText}. ${view.lastWrong.question.explanation}`);
+		}
+	});
+	// Stop talking when not in an active question.
+	$effect(() => {
+		if (view.status === 'ready' || view.status === 'over' || view.status === 'paused') {
+			stopSpeech();
+			lastSpokenQid = '';
+		}
+	});
 
 	function build() {
 		game = createGame(canvas, {
@@ -127,12 +188,18 @@
 				window.matchMedia('(display-mode: standalone)').matches;
 			const dismissed = localStorage.getItem('skyshark.iosHint') === '1';
 			showIosHint = isIos && !standalone && !dismissed;
+			try {
+				readAloud = localStorage.getItem('skyshark.readAloud') === '1';
+			} catch {
+				/* ignore */
+			}
 		}
 
 		onDestroy(() => {
 			window.removeEventListener('resize', onResize);
 			window.removeEventListener('keydown', onKey);
 			ro.disconnect();
+			stopSpeech();
 			game?.dispose();
 		});
 	});
@@ -194,6 +261,14 @@
 						<p class="hint">
 							Answer the question to fire on the marked enemy. Wrong answers show you the right one.
 						</p>
+						<button
+							class="readaloud"
+							class:on={readAloud}
+							onclick={toggleReadAloud}
+							aria-pressed={readAloud}
+						>
+							🔊 Read aloud: {readAloud ? 'On' : 'Off'}
+						</button>
 					{:else}
 						<p class="hint">Drag to steer · auto-fire. Just blow stuff up — no studying.</p>
 					{/if}
@@ -456,6 +531,23 @@
 	}
 	.train:hover {
 		background: rgba(255, 176, 112, 0.12);
+	}
+	.readaloud {
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		padding: 0.55rem;
+		border-radius: 10px;
+		border: 1px solid rgba(255, 176, 112, 0.3);
+		background: transparent;
+		color: rgba(244, 236, 216, 0.7);
+		cursor: pointer;
+	}
+	.readaloud.on {
+		background: #ffb070;
+		color: #06080f;
+		border-color: #ffb070;
 	}
 	.back {
 		font-family: var(--font-mono);

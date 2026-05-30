@@ -104,5 +104,56 @@ export const loadingQuestions: Question[] = [
 			'An aft CG reduces stability and makes the aircraft harder to control; keep the CG within the manufacturer’s limits.',
 		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 7 (Loading & Performance)' },
 		difficulty: 3
+	},
+	{
+		id: 'lp-007',
+		domain: 'loading-performance',
+		prompt: { kind: 'text', text: 'The load factor on an aircraft’s structure increases any time it:' },
+		choices: [
+			{ id: 'a', text: 'Flies straight and level' },
+			{ id: 'b', text: 'Performs a maneuver other than straight-and-level flight, such as a banked turn' },
+			{ id: 'c', text: 'Reduces its gross weight' },
+			{ id: 'd', text: 'Descends in a straight line' }
+		],
+		correctAnswer: 'b',
+		explanation:
+			'Maneuvers — especially banked turns — increase load factor, so the structure must support more than the aircraft’s weight.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 7 (Loading & Performance)' },
+		difficulty: 2
+	},
+	{
+		id: 'lp-008',
+		domain: 'loading-performance',
+		prompt: { kind: 'text', text: 'A fixed-wing aircraft stalls when the wing:' },
+		choices: [
+			{ id: 'a', text: 'Exceeds its critical angle of attack' },
+			{ id: 'b', text: 'Exceeds the maximum groundspeed' },
+			{ id: 'c', text: 'Exceeds the maximum gross weight' },
+			{ id: 'd', text: 'Runs low on battery' }
+		],
+		correctAnswer: 'a',
+		explanation:
+			'A stall happens when the wing exceeds its critical angle of attack and smooth airflow over it breaks down — regardless of airspeed.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 7 (Loading & Performance)' },
+		difficulty: 3
+	},
+	{
+		id: 'lp-009',
+		domain: 'loading-performance',
+		prompt: {
+			kind: 'text',
+			text: 'To ensure the aircraft’s CG limits are not exceeded, follow the loading instructions in:'
+		},
+		choices: [
+			{ id: 'a', text: 'The Pilot’s Operating Handbook or UAS Flight Manual' },
+			{ id: 'b', text: 'The Aeronautical Information Manual (AIM)' },
+			{ id: 'c', text: 'The sectional chart' },
+			{ id: 'd', text: 'A NOTAM' }
+		],
+		correctAnswer: 'a',
+		explanation:
+			'Weight-and-balance and loading limits are in the manufacturer’s Pilot’s Operating Handbook / UAS Flight Manual.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 7 (Loading & Performance)' },
+		difficulty: 1
 	}
 ];

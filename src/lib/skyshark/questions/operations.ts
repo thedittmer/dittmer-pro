@@ -183,5 +183,40 @@ export const operationsQuestions: Question[] = [
 			'Fatigue is an impaired state — it slows reaction, degrades judgment, and is hard to self-detect. Do not fly fatigued.',
 		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'ACS V.E (Stress and fatigue)' },
 		difficulty: 1
+	},
+	{
+		id: 'op-011',
+		domain: 'operations',
+		prompt: {
+			kind: 'text',
+			text: 'At a non-towered airport, the Common Traffic Advisory Frequency (CTAF) is used to:'
+		},
+		choices: [
+			{ id: 'a', text: 'Self-announce and monitor position and intentions with nearby traffic' },
+			{ id: 'b', text: 'Request an IFR clearance' },
+			{ id: 'c', text: 'Get an ATC authorization for Class B' },
+			{ id: 'd', text: 'Broadcast Remote ID' }
+		],
+		correctAnswer: 'a',
+		explanation:
+			'CTAF is the frequency where pilots self-announce and monitor traffic at airports without an operating control tower.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'ACS V.A (Radio communications)' },
+		difficulty: 2
+	},
+	{
+		id: 'op-012',
+		domain: 'operations',
+		prompt: { kind: 'text', text: 'Which is a correct practice for the lithium batteries that power most sUAS?' },
+		choices: [
+			{ id: 'a', text: 'Keep using a swollen or damaged pack to finish the job' },
+			{ id: 'b', text: 'Inspect packs, charge them properly, and retire damaged ones — they can catch fire' },
+			{ id: 'c', text: 'Store them fully charged in direct sun' },
+			{ id: 'd', text: 'Lithium batteries have no special hazards' }
+		],
+		correctAnswer: 'b',
+		explanation:
+			'Lithium batteries are a fire hazard: inspect and charge them per the manufacturer, and never use a swollen or damaged pack.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'ACS V.C (Lithium batteries)' },
+		difficulty: 2
 	}
 ];

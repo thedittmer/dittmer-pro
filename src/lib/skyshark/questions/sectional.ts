@@ -114,5 +114,36 @@ export const sectionalQuestions: Question[] = [
 			'Those quadrant numbers are the Maximum Elevation Figure — the highest terrain/obstacle in that grid, in hundreds of feet MSL.',
 		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 2 (Charts / VFR symbols)' },
 		difficulty: 3
+	},
+	{
+		id: 'sec-007',
+		domain: 'sectional',
+		prompt: { kind: 'text', text: 'A solid BLUE line on a sectional marks the boundary of which airspace?' },
+		choices: [
+			{ id: 'a', text: 'Class B' },
+			{ id: 'b', text: 'Class C' },
+			{ id: 'c', text: 'Class D' },
+			{ id: 'd', text: 'Class E to the surface' }
+		],
+		correctAnswer: 'a',
+		explanation: 'Solid blue lines depict Class B; solid magenta lines depict Class C.',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 2 (Charts / VFR symbols)' },
+		difficulty: 2
+	},
+	{
+		id: 'sec-008',
+		domain: 'sectional',
+		prompt: { kind: 'text', text: 'Lines of latitude on a chart measure:' },
+		choices: [
+			{ id: 'a', text: 'Degrees north and south of the equator' },
+			{ id: 'b', text: 'Degrees east and west of Greenwich' },
+			{ id: 'c', text: 'Magnetic variation' },
+			{ id: 'd', text: 'Terrain elevation' }
+		],
+		correctAnswer: 'a',
+		explanation:
+			'Latitude is measured in degrees north/south of the equator; longitude is east/west of the prime meridian (Greenwich).',
+		sourceRef: { doc: 'faa-remote-pilot-study-guide', locator: 'Ch. 2 (Charts)' },
+		difficulty: 2
 	}
 ];
