@@ -183,6 +183,8 @@
 	<PaymentForm
 		open={true}
 		project={paymentFormProject}
+		clientEmail={clientEmail(paymentFormProject.client)}
+		clientName={clientName(paymentFormProject.client)}
 		onClose={() => (paymentFormProject = null)}
 		onSaved={handlePaymentSaved}
 	/>

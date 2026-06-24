@@ -404,6 +404,251 @@ dittmer@hey.com`;
 	}
 });
 
+// POST /api/billing/send-receipt
+// Body: { project_id, to, amount, method, reference, received_date, note, receipt_number }
+// Admin-only. Sends a "payment received" receipt for a payment that has already
+// been recorded in the payments collection. Call it AFTER creating the payment
+// so the account balance reflects the new money.
+routerAdd('POST', '/api/billing/send-receipt', (e) => {
+	const REPLY_TO = 'dittmer@hey.com';
+
+	// Admin gate — only logged-in users with admin=true on the users collection.
+	const auth = e.auth;
+	if (!auth || auth.collection().name !== 'users' || !auth.getBool('admin')) {
+		return e.json(403, { message: 'admin required' });
+	}
+
+	const body = new DynamicModel({
+		project_id: '',
+		to: '',
+		amount: 0,
+		method: '',
+		reference: '',
+		received_date: '', // YYYY-MM-DD; defaults to today
+		note: '',
+		receipt_number: '' // optional override; auto-generated if blank
+	});
+	e.bindBody(body);
+
+	if (!body.project_id || !body.to || !(body.amount > 0)) {
+		return e.json(400, { message: 'project_id, to and a positive amount are required' });
+	}
+
+	try {
+
+	let project;
+	try {
+		project = $app.findRecordById('projects', body.project_id);
+	} catch (_) {
+		return e.json(404, { message: 'project not found' });
+	}
+
+	let client = null;
+	try {
+		client = $app.findRecordById('clients', project.getString('client'));
+	} catch (_) {}
+
+	// Payments already include the one we're receipting (recorded first).
+	const payments = $app.findRecordsByFilter(
+		'payments',
+		'project = {:pid}',
+		'-received_date',
+		500,
+		0,
+		{ pid: project.id }
+	);
+
+	const setupFee = project.getFloat('setup_fee') || 0;
+	const monthly = project.getFloat('monthly_fee') || 0;
+	const year1Months = project.getFloat('year1_months') || 0;
+	const agreedY1 = setupFee + monthly * year1Months;
+	let received = 0;
+	for (let i = 0; i < payments.length; i++) {
+		received += payments[i].getFloat('amount') || 0;
+	}
+	const balance = agreedY1 - received;
+
+	const businessName =
+		project.getString('business_name') || project.getString('name') || 'your project';
+	const clientName = client ? client.getString('name') : '';
+	const billingName = client
+		? client.getString('billing_name') || client.getString('name')
+		: '';
+	const clientEmail = client ? client.getString('email') : '';
+	const greetingFirstName = clientName ? clientName.split(' ')[0] : '';
+	const note = body.note || '';
+	const amount = body.amount;
+	const method = body.method || 'payment';
+	const reference = body.reference || '';
+	const methodLabel = reference ? method + ' · #' + reference : method;
+
+	// goja runtime doesn't support Intl.NumberFormat options — format by hand.
+	const fmt = (n) => {
+		const sign = n < 0 ? '-' : '';
+		const abs = Math.abs(n);
+		const dollars = Math.floor(abs);
+		const cents = Math.round((abs - dollars) * 100);
+		const dollarsStr = String(dollars).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+		return sign + '$' + dollarsStr + '.' + String(cents).padStart(2, '0');
+	};
+
+	const MONTHS = [
+		'January', 'February', 'March', 'April', 'May', 'June',
+		'July', 'August', 'September', 'October', 'November', 'December'
+	];
+	const _d = new Date();
+	const today = MONTHS[_d.getMonth()] + ' ' + _d.getDate() + ', ' + _d.getFullYear();
+
+	let paidLabel = today;
+	if (body.received_date) {
+		const pd = new Date(body.received_date.slice(0, 10) + 'T00:00:00');
+		if (!isNaN(pd.getTime())) {
+			paidLabel = MONTHS[pd.getMonth()] + ' ' + pd.getDate() + ', ' + pd.getFullYear();
+		}
+	}
+
+	// Receipt number: caller-provided or auto-gen as RCP-<INITIALS>-<YYMM>-<HEX4>
+	let receiptNumber = body.receipt_number;
+	if (!receiptNumber) {
+		const source = businessName && /\s/.test(businessName) ? businessName : project.getString('domain') || businessName || 'rcp';
+		let initials = (source.match(/\b\w/g) || []).join('').toUpperCase();
+		if (initials.length < 3) {
+			initials = source.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase();
+		}
+		initials = initials.slice(0, 4) || 'RCP';
+		const yymm =
+			String(_d.getFullYear()).slice(2) + String(_d.getMonth() + 1).padStart(2, '0');
+		const rand = Math.floor(Math.random() * 65535).toString(16).toUpperCase().padStart(4, '0');
+		receiptNumber = 'RCP-' + initials + '-' + yymm + '-' + rand;
+	}
+
+	const paidInFull = balance <= 0;
+	const accentBalance = paidInFull ? '#3a7a2a' : '#c5611f';
+
+	const html = `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#f4ecd8;font-family:Georgia,'Times New Roman',serif;color:#1a1a1a;">
+<table style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e3d8b9;border-radius:6px;padding:32px;">
+<tr><td>
+<div style="border-bottom:2px solid #c5611f;padding-bottom:16px;margin-bottom:24px;">
+<div style="color:#c5611f;font-weight:bold;letter-spacing:0.08em;text-transform:uppercase;font-size:13px;font-family:Helvetica,Arial,sans-serif;">Dittmer Internet Pro</div>
+<div style="color:#666;font-size:13px;margin-top:4px;font-family:Helvetica,Arial,sans-serif;">Jason Dittmer · 417-312-1469 · dittmer@hey.com</div>
+</div>
+
+<table style="width:100%;margin-bottom:24px;font-family:Helvetica,Arial,sans-serif;font-size:13px;">
+<tr>
+<td style="vertical-align:top;">
+<h1 style="font-size:24px;font-style:italic;font-weight:400;margin:0 0 4px;font-family:Georgia,'Times New Roman',serif;">Payment received</h1>
+<div style="color:#666;">${receiptNumber}</div>
+<div style="color:#3a7a2a;font-weight:bold;margin-top:6px;">Paid ${paidLabel}</div>
+</td>
+<td style="vertical-align:top;text-align:right;">
+<div style="color:#666;text-transform:uppercase;letter-spacing:0.08em;font-size:11px;">Received from</div>
+<div style="margin-top:4px;font-size:14px;">${billingName || '—'}</div>
+${clientEmail ? `<div style="color:#666;font-size:12px;">${clientEmail}</div>` : ''}
+</td>
+</tr>
+</table>
+
+<p style="margin:0 0 16px;">${greetingFirstName ? 'Hi ' + greetingFirstName + ',' : 'Hi,'}</p>
+
+<p style="margin:0 0 16px;">Thank you — we've received your payment toward <strong>${businessName}</strong>${
+		project.getString('domain') ? ' (' + project.getString('domain') + ')' : ''
+	}. This email is your receipt; no action is needed.</p>
+
+${note ? `<p style="margin:0 0 16px;">${note}</p>` : ''}
+
+<!-- Payment received -->
+<table style="width:100%;border-collapse:collapse;margin:24px 0;font-family:Helvetica,Arial,sans-serif;font-size:14px;">
+<thead>
+<tr style="background:#1a1a1a;color:#f4ecd8;">
+<th style="text-align:left;padding:10px 14px;">Payment</th>
+<th style="text-align:right;padding:10px 14px;">Amount</th>
+</tr>
+</thead>
+<tbody>
+<tr><td style="padding:14px;">${methodLabel} · ${paidLabel}</td><td style="padding:14px;text-align:right;">${fmt(amount)}</td></tr>
+<tr style="background:#e8f3e0;border-top:2px solid #4a8a3a;"><td style="padding:14px;font-weight:bold;color:#3a7a2a;">Amount received</td><td style="padding:14px;text-align:right;font-weight:bold;color:#3a7a2a;font-size:18px;">${fmt(amount)}</td></tr>
+</tbody>
+</table>
+
+<!-- Account context -->
+<div style="margin:24px 0;padding:14px;background:#faf6e8;border-radius:4px;font-family:Helvetica,Arial,sans-serif;font-size:13px;">
+<div style="color:#666;text-transform:uppercase;letter-spacing:0.08em;font-size:11px;margin-bottom:8px;">Account · ${businessName}</div>
+<table style="width:100%;border-collapse:collapse;">
+<tr><td style="padding:3px 0;color:#444;">Year 1 agreed</td><td style="padding:3px 0;text-align:right;">${fmt(agreedY1)}</td></tr>
+<tr><td style="padding:3px 0;color:#444;">Received to date</td><td style="padding:3px 0;text-align:right;">${fmt(received)}</td></tr>
+<tr style="border-top:1px solid #e3d8b9;"><td style="padding:6px 0 3px;font-weight:bold;color:${accentBalance};">${paidInFull ? 'Paid in full' : 'Remaining balance'}</td><td style="padding:6px 0 3px;text-align:right;font-weight:bold;color:${accentBalance};">${fmt(paidInFull ? 0 : balance)}</td></tr>
+</table>
+</div>
+
+${paidInFull ? '<p style="margin:0 0 16px;font-family:Helvetica,Arial,sans-serif;font-size:14px;color:#3a7a2a;font-weight:bold;">Your year 1 balance is paid in full. Thank you!</p>' : ''}
+
+<p style="margin:24px 0 0;font-family:Helvetica,Arial,sans-serif;font-size:14px;">
+Thanks,<br>
+Jason
+</p>
+
+</td></tr>
+</table>
+</body></html>`;
+
+	const text = `Dittmer Internet Pro — Payment received
+${receiptNumber}
+Paid ${paidLabel}
+
+Received from: ${billingName || '—'}${clientEmail ? '\n               ' + clientEmail : ''}
+
+${greetingFirstName ? 'Hi ' + greetingFirstName + ',' : 'Hi,'}
+
+Thank you — we've received your payment toward ${businessName}${
+		project.getString('domain') ? ' (' + project.getString('domain') + ')' : ''
+	}. This email is your receipt; no action is needed.
+${note ? '\n' + note + '\n' : ''}
+Payment:            ${methodLabel} · ${paidLabel}
+Amount received:    ${fmt(amount)}
+
+--- Account · ${businessName} ---
+Year 1 agreed:      ${fmt(agreedY1)}
+Received to date:   ${fmt(received)}
+${paidInFull ? 'Paid in full. Thank you!' : 'Remaining balance:  ' + fmt(balance)}
+
+Thanks,
+Jason Dittmer
+417-312-1469
+dittmer@hey.com`;
+
+	const settings = $app.settings();
+	const message = new MailerMessage({
+		from: {
+			address: settings.meta.senderAddress,
+			name: settings.meta.senderName
+		},
+		to: [{ address: body.to }],
+		replyTo: [{ address: REPLY_TO }],
+		subject: `Receipt ${receiptNumber} — ${businessName} — ${fmt(amount)} received`,
+		html: html,
+		text: text
+	});
+
+	try {
+		$app.newMailClient().send(message);
+	} catch (err) {
+		return e.json(500, { message: 'send failed: ' + err });
+	}
+
+	return e.json(200, {
+		sent: true,
+		to: body.to,
+		amount: amount,
+		project: businessName,
+		receipt_number: receiptNumber,
+		balance: balance
+	});
+
+	} catch (err) {
+		return e.json(500, { message: 'handler error: ' + String(err), stack: String(err.stack || '') });
+	}
+});
+
 // ──────────────────────────────────────────────────────────────────────
 // Social: comments + reactions on stops and posts
 // ──────────────────────────────────────────────────────────────────────

@@ -8,11 +8,13 @@
 	type Props = {
 		open: boolean;
 		project: Project;
+		clientEmail?: string;
+		clientName?: string;
 		onClose: () => void;
 		onSaved: (payment: Payment) => void;
 	};
 
-	let { open, project, onClose, onSaved }: Props = $props();
+	let { open, project, clientEmail = '', clientName = '', onClose, onSaved }: Props = $props();
 
 	let amount = $state<number | ''>('');
 	let receivedDate = $state(todayInput());
@@ -23,9 +25,14 @@
 	let photoUrl = $state<string | null>(null);
 	let cameraInput: HTMLInputElement | undefined = $state();
 	let libraryInput: HTMLInputElement | undefined = $state();
+	let sendReceipt = $state(true);
+	// Holds the payment once created, so a retry after a receipt-send failure
+	// resends the email instead of creating a duplicate payment.
+	let savedPayment = $state<Payment | null>(null);
 
 	let busy = $state(false);
 	let errorMessage = $state('');
+	let notice = $state('');
 
 	// Re-init each time the modal opens.
 	let lastOpen = false;
@@ -47,7 +54,10 @@
 		reference = '';
 		notes = '';
 		clearPhoto();
+		sendReceipt = true;
+		savedPayment = null;
 		errorMessage = '';
+		notice = '';
 		busy = false;
 	}
 
@@ -72,20 +82,45 @@
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		errorMessage = '';
+		notice = '';
 		busy = true;
 		try {
-			const fd = new FormData();
-			fd.set('project', project.id);
-			fd.set('amount', String(amount));
-			// PB date field tolerates date-only "YYYY-MM-DD"
-			fd.set('received_date', receivedDate);
-			fd.set('method', method);
-			fd.set('reference', reference);
-			fd.set('notes', notes);
-			if (photoFile) fd.set('photo', photoFile);
+			// Reuse an already-saved payment on retry so a receipt failure can't
+			// create a duplicate; only create on the first pass.
+			let saved = savedPayment;
+			if (!saved) {
+				const fd = new FormData();
+				fd.set('project', project.id);
+				fd.set('amount', String(amount));
+				// PB date field tolerates date-only "YYYY-MM-DD"
+				fd.set('received_date', receivedDate);
+				fd.set('method', method);
+				fd.set('reference', reference);
+				fd.set('notes', notes);
+				if (photoFile) fd.set('photo', photoFile);
 
-			const saved = await pb.collection('payments').create<Payment>(fd);
-			onSaved(saved);
+				saved = await pb.collection('payments').create<Payment>(fd);
+				savedPayment = saved;
+				onSaved(saved);
+			}
+
+			// Email the client a receipt. The payment is already saved, so a
+			// receipt failure must NOT lose it — surface the error and let the
+			// user retry (resend) or uncheck the box and click to just close.
+			if (sendReceipt && clientEmail) {
+				await pb.send('/api/billing/send-receipt', {
+					method: 'POST',
+					body: {
+						project_id: project.id,
+						to: clientEmail,
+						amount: Number(amount),
+						method,
+						reference,
+						received_date: receivedDate
+					}
+				});
+			}
+
 			onClose();
 		} catch (err) {
 			if (err instanceof ClientResponseError) {
@@ -99,6 +134,15 @@
 				}
 			} else {
 				errorMessage = (err as Error).message;
+			}
+			// If the payment already saved, the failure was the receipt email.
+			// Make the recovery path explicit.
+			if (savedPayment) {
+				errorMessage =
+					`Payment saved ✓ — but the receipt email failed: ${errorMessage}. ` +
+					`Click “${sendReceipt ? 'retry receipt' : 'done'}” to ${
+						sendReceipt ? 'resend' : 'close without resending'
+					}.`;
 			}
 		} finally {
 			busy = false;
@@ -207,14 +251,35 @@
 				</div>
 
 				<label>
-					<span>Notes <em>(optional)</em></span>
+					<span>Notes <em>(internal — not emailed)</em></span>
 					<textarea rows="3" bind:value={notes}></textarea>
 				</label>
 
+				{#if clientEmail}
+					<label class="receipt-toggle">
+						<input type="checkbox" bind:checked={sendReceipt} />
+						<span class="receipt-text">
+							Email a receipt to {clientName ? `${clientName} · ` : ''}{clientEmail}
+						</span>
+					</label>
+				{:else}
+					<p class="no-email">No email on file for this client — receipt can't be sent.</p>
+				{/if}
+
 				<div class="actions">
-					<button type="button" class="ghost" onclick={onClose} disabled={busy}>cancel</button>
+					<button type="button" class="ghost" onclick={onClose} disabled={busy}>
+						{savedPayment ? 'done' : 'cancel'}
+					</button>
 					<button type="submit" class="primary" disabled={busy || !amount}>
-						{busy ? 'saving…' : 'log payment'}
+						{#if busy}
+							{savedPayment ? 'sending…' : 'saving…'}
+						{:else if savedPayment}
+							{sendReceipt && clientEmail ? 'retry receipt' : 'done'}
+						{:else if sendReceipt && clientEmail}
+							log payment + receipt
+						{:else}
+							log payment
+						{/if}
 					</button>
 				</div>
 			</form>
@@ -432,6 +497,37 @@
 		border-radius: 3px;
 		border: 1px solid var(--color-border);
 		object-fit: cover;
+	}
+
+	.receipt-toggle {
+		flex-direction: row;
+		align-items: center;
+		gap: 0.6rem;
+		cursor: pointer;
+		padding: 0.6rem 0.7rem;
+		background: var(--color-surface-2);
+		border: 1px solid var(--color-border);
+		border-radius: 3px;
+	}
+	.receipt-toggle input {
+		width: auto;
+		flex-shrink: 0;
+		accent-color: var(--color-accent);
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+	.receipt-text {
+		font-family: inherit;
+		font-size: 0.85rem;
+		letter-spacing: 0;
+		text-transform: none;
+		color: var(--color-text);
+	}
+	.no-email {
+		margin: 0;
+		font-size: 0.8rem;
+		color: var(--color-muted);
+		font-style: italic;
 	}
 
 	.actions {
